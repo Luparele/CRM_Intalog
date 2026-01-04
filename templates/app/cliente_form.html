@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% if object %}Editar Cliente{% else %}Adicionar Novo Cliente{% endif %}{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">{% if object %}Editar Cliente{% else %}Adicionar Novo Cliente{% endif %}</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {# --- NOVO CAMPO: Escolher Representante (Apenas para Gestores/Financeiro) --- #}
+                {% if form.cadastrado_por %}
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-person-badge-fill me-2"></i>
+                        <strong>Atribuição de Carteira:</strong> Selecione abaixo o dono deste cliente.
+                        <div class="mt-2">
+                            {% bootstrap_field form.cadastrado_por show_label=False %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="id_cnpj" class="form-label">CNPJ</label>
+                    <div class="input-group">
+                        {{ form.cnpj }} <button class="btn btn-outline-secondary" type="button" id="btn-consultar-cnpj">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                    {% if form.cnpj.errors %}
+                        <div class="text-danger small">{{ form.cnpj.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {% bootstrap_field form.razao_social %}
+                
+                {# --- ALTERAÇÃO: Removido 'filial' --- #}
+                
+                {% bootstrap_field form.endereco %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {% bootstrap_field form.nome_contato %}
+                    </div>
+                    <div class="col-md-6">
+                        {% bootstrap_field form.telefone_contato %}
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success">Salvar</button>
+                    <a href="{% url 'app:cliente-list' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+    document.getElementById('btn-consultar-cnpj').addEventListener('click', function() {
+        const cnpjInput = document.getElementById('id_cnpj');
+        const razaoSocialInput = document.getElementById('id_razao_social');
+        const enderecoInput = document.getElementById('id_endereco');
+        
+        const cnpj = cnpjInput.value.replace(/[^\d]/g, '');
+
+        if (cnpj.length === 14) {
+            const url = `/api/consulta-cnpj/${cnpj}/`;
+            
+            const btn = this;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+            btn.disabled = true;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('CNPJ não encontrado ou erro na API.');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        razaoSocialInput.value = data.razao_social;
+                        if (data.endereco) {
+                            enderecoInput.value = data.endereco;
+                        }
+                    }
+                })
+                .catch(error => {
+                    alert("Erro ao consultar: " + error.message);
+                })
+                .finally(() => {
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                });
+        } else {
+            alert("Por favor, digite um CNPJ válido com 14 números.");
+        }
+    });
+</script>
+{% endblock %}

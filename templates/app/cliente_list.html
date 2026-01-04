@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h1>{% if user.is_staff %}Todos os Clientes{% else %}Meus Clientes{% endif %}</h1>
+        
+        {# Botão liberado para todos os setores (incluindo Financeiro) #}
+        <a href="{% url 'app:cliente-create' %}" class="btn btn-primary mt-2 mt-md-0">Adicionar Novo Cliente</a>
+    </div>
+
+    {# Filtros apenas para quem vê tudo (Staff, Comercial, Admin, Financeiro) #}
+    {% if user.is_staff or user.profile.tem_acesso_gestao or user.profile.is_financeiro %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Filtros</h5>
+            <form method="get" action="{% url 'app:cliente-list' %}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label for="q_input" class="form-label">Buscar por Razão Social ou CNPJ</label>
+                        <input type="text" class="form-control" name="q" id="q_input" value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="rep_select" class="form-label">Cadastrado Por</label>
+                        <select name="representante" id="rep_select" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="admin" {% if selected_rep == 'admin' %}selected{% endif %}>Cadastrado por mim (Admin)</option>
+                            <optgroup label="Representantes">
+                                {% for rep in representantes_list %}
+                                    <option value="{{ rep.id }}" {% if selected_rep == rep.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ rep.username }}
+                                    </option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-primary" type="submit">Filtrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {# --- TABELA 1: CLIENTES ATIVOS (Definitivos) --- #}
+    <div class="card mb-5">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-briefcase-fill me-2"></i>Carteira de Clientes (Ativos)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Razão Social</th>
+                            <th>CNPJ</th>
+                            <th>Contato</th>
+                            {# Apenas gestores veem a coluna de quem cadastrou #}
+                            {% if user.is_staff or user.profile.tem_acesso_gestao or user.profile.is_financeiro %}
+                            <th>Cadastrado Por</th>
+                            {% endif %}
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in clientes %}
+                        <tr>
+                            <td>{{ cliente.razao_social }}</td>
+                            <td>{{ cliente.cnpj }}</td>
+                            <td>{{ cliente.nome_contato }}</td>
+                            
+                            {% if user.is_staff or user.profile.tem_acesso_gestao or user.profile.is_financeiro %}
+                            <td>{{ cliente.cadastrado_por.username|default:"Admin" }}</td>
+                            {% endif %}
+                            
+                            <td>
+                                {# 1. Botão Detalhes (Todos veem) #}
+                                <a href="{% url 'app:cliente-detail' cliente.pk %}" class="btn btn-sm btn-info" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                
+                                {# 2. Botão Editar (Financeiro agora pode ver) #}
+                                {% if not user.profile.is_financeiro or user.profile.is_financeiro %}
+                                    {# A lógica acima é redundante propositalmente para mostrar que "todos veem", mas mantendo a estrutura para você entender onde mudou. Na prática, basta remover o IF ou deixar assim: #}
+                                    <a href="{% url 'app:cliente-update' cliente.pk %}" class="btn btn-sm btn-secondary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                {% endif %}
+
+                                {# 3. Botão Excluir (Financeiro NÃO vê, conforme padrão de segurança, apenas Comercial/Admin/Dono) #}
+                                {% if not user.profile.is_financeiro %}
+                                    <a href="{% url 'app:cliente-delete' cliente.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if user.is_staff or user.profile.tem_acesso_gestao or user.profile.is_financeiro %}5{% else %}4{% endif %}" class="text-center py-3">
+                                Nenhum cliente ativo encontrado com os filtros aplicados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# --- TABELA 2: PROSPECTS (Em Prospecção) --- #}
+    {# Regra 3: Financeiro não acessa prospecção, mas pode ver a lista de prospects para promover se necessário #}
+    {% if not user.profile.is_financeiro or user.is_staff %} 
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel-fill me-2"></i>Em Prospecção (Prospects)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Razão Social / Nome</th>
+                            <th>CNPJ</th>
+                            <th>Contato</th>
+                            <th>Email</th>
+                            {% if user.is_staff or user.profile.tem_acesso_gestao %}
+                            <th>Cadastrado Por</th>
+                            {% endif %}
+                            <th>Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prospect in prospects %}
+                        <tr>
+                            <td>{{ prospect.razao_social }}</td>
+                            <td>{{ prospect.cnpj|default:"-" }}</td>
+                            <td>{{ prospect.nome_contato }}</td>
+                            <td>{{ prospect.email_contato|default:"-" }}</td>
+                            {% if user.is_staff or user.profile.tem_acesso_gestao %}
+                            <td>{{ prospect.cadastrado_por.username|default:"Admin" }}</td>
+                            {% endif %}
+                            <td>
+                                <span class="badge bg-warning text-dark">Em Prospecção</span>
+                            </td>
+                            <td class="text-end">
+                                {# Botão de Migração: Financeiro PODE ver isso para ativar cliente #}
+                                <button class="btn btn-sm btn-success"
+                                        hx-get="{% url 'app:promover-prospect-modal' prospect.pk %}"
+                                        hx-target="#main-modal-content"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#main-modal"
+                                        title="Promover para Carteira de Clientes">
+                                    <i class="bi bi-arrow-up-circle-fill me-1"></i> Tornar Ativo
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if user.is_staff or user.profile.tem_acesso_gestao %}7{% else %}6{% endif %}" class="text-center py-3">
+                                Nenhum prospect cadastrado no momento.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

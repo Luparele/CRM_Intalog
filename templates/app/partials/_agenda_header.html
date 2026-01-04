@@ -1,0 +1,13 @@
+{% if status == 'nao_iniciada' %}
+<div class="card-header bg-danger text-white">
+    {{ title }} ({{ count }})
+</div>
+{% elif status == 'iniciada' %}
+<div class="card-header bg-warning text-dark">
+    {{ title }} ({{ count }})
+</div>
+{% elif status == 'finalizada' %}
+<div class="card-header bg-success text-white">
+    {{ title }} ({{ count }})
+</div>
+{% endif %}

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Confirmar Exclusão de Serviço{% endblock %}
+
+{% block content %}
+    <h1>Confirmar Exclusão</h1>
+    <hr>
+    <p>Você tem certeza que deseja excluir o serviço para o cliente <strong>{{ object.cliente.razao_social }}</strong> no valor de R$ {{ object.valor }}?</p>
+    <p class="text-danger">Atenção: Esta ação não pode ser desfeita.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sim, tenho certeza</button>
+        <a href="{% url 'app:servico-list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+{% endblock %}

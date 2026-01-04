@@ -1,0 +1,201 @@
+{% load humanize %}
+
+<div id="bloco-top-clientes">
+    <hr class="mt-5">
+    <h4 class="mb-3">Melhores Clientes</h4>
+
+    {# --- CABEÇALHO PARA O BLOCO DE FATURAMENTO --- #}
+    <h5 class="text-muted mt-4">Top 5 por Faturamento</h5>
+    <div class="row">
+        {# --- COLUNA MENSAL (FATURAMENTO) --- #}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">Top 5 do Mês</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-3">#</th>
+                                <th scope="col">Cliente</th>
+                                <th scope="col" class="text-end pe-3">Faturamento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in top_clientes_mensal_faturamento %}
+                            <tr>
+                                <th scope="row" class="ps-3">{{ forloop.counter }}</th>
+                                <td>{{ cliente.cliente__razao_social }}</td>
+                                <td class="text-end pe-3">R$ {{ cliente.faturamento_total|floatformat:2|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted p-3">Sem dados no mês.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# --- COLUNA TRIMESTRAL (FATURAMENTO) --- #}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">Top 5 do Trimestre</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-3">#</th>
+                                <th scope="col">Cliente</th>
+                                <th scope="col" class="text-end pe-3">Faturamento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in top_clientes_trimestral_faturamento %}
+                            <tr>
+                                <th scope="row" class="ps-3">{{ forloop.counter }}</th>
+                                <td>{{ cliente.cliente__razao_social }}</td>
+                                <td class="text-end pe-3">R$ {{ cliente.faturamento_total|floatformat:2|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted p-3">Sem dados no trimestre.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# --- COLUNA ANUAL (FATURAMENTO) --- #}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">Top 5 do Ano</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-3">#</th>
+                                <th scope="col">Cliente</th>
+                                <th scope="col" class="text-end pe-3">Faturamento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in top_clientes_anual_faturamento %}
+                            <tr>
+                                <th scope="row" class="ps-3">{{ forloop.counter }}</th>
+                                <td>{{ cliente.cliente__razao_social }}</td>
+                                <td class="text-end pe-3">R$ {{ cliente.faturamento_total|floatformat:2|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted p-3">Sem dados no ano.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- CABEÇALHO PARA O BLOCO DE NÚMERO DE SERVIÇOS --- #}
+    <h5 class="text-muted mt-4">Top 5 por Número de Serviços</h5>
+    <div class="row">
+        {# --- COLUNA MENSAL (SERVIÇOS) --- #}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">Top 5 do Mês</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-3">#</th>
+                                <th scope="col">Cliente</th>
+                                <th scope="col" class="text-center pe-3">Nº de Serviços</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in top_clientes_mensal_servicos %}
+                            <tr>
+                                <th scope="row" class="ps-3">{{ forloop.counter }}</th>
+                                <td>{{ cliente.cliente__razao_social }}</td>
+                                <td class="text-center pe-3">{{ cliente.num_servicos }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted p-3">Sem dados no mês.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# --- COLUNA TRIMESTRAL (SERVIÇOS) --- #}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">Top 5 do Trimestre</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-3">#</th>
+                                <th scope="col">Cliente</th>
+                                <th scope="col" class="text-center pe-3">Nº de Serviços</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in top_clientes_trimestral_servicos %}
+                            <tr>
+                                <th scope="row" class="ps-3">{{ forloop.counter }}</th>
+                                <td>{{ cliente.cliente__razao_social }}</td>
+                                <td class="text-center pe-3">{{ cliente.num_servicos }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted p-3">Sem dados no trimestre.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# --- COLUNA ANUAL (SERVIÇOS) --- #}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">Top 5 do Ano</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-3">#</th>
+                                <th scope="col">Cliente</th>
+                                <th scope="col" class="text-center pe-3">Nº de Serviços</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in top_clientes_anual_servicos %}
+                            <tr>
+                                <th scope="row" class="ps-3">{{ forloop.counter }}</th>
+                                <td>{{ cliente.cliente__razao_social }}</td>
+                                <td class="text-center pe-3">{{ cliente.num_servicos }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted p-3">Sem dados no ano.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

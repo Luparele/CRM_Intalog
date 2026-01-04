@@ -1,0 +1,72 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico do Cliente</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt; color: #333; }
+        h1 { font-size: 18pt; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 5px; margin-bottom: 0; }
+        .header-info { margin-top: 5px; margin-bottom: 20px; font-size: 9pt; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        thead tr { background-color: #0d6efd; color: white; }
+        th { font-weight: bold; }
+        tbody tr:nth-child(even) { background-color: #f2f2f2; }
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+        tfoot tr { background-color: #343a40; color: white; font-weight: bold; }
+        #footer_content { text-align: center; font-size: 8pt; color: #999; }
+        @page { @frame footer { -pdf-frame-content: footer_content; bottom: 1cm; margin-left: 1cm; margin-right: 1cm; height: 1cm; } }
+    </style>
+</head>
+<body>
+    <div id="footer_content">
+        Intalog Logística - Gerado em {{ data_geracao|date:"d/m/Y à\s H:i" }}
+    </div>
+
+    <h1>Histórico de Vendas por Cliente</h1>
+    <div class="header-info">
+        <strong>Cliente:</strong> {{ cliente_selecionado.razao_social }} ({{ cliente_selecionado.cnpj }})
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo de Serviço</th>
+                <th>Data</th>
+                {% if user.is_staff %}
+                <th>Fechado Por</th>
+                {% endif %}
+                <th class="text-end">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for servico in resultados %}
+            <tr>
+                <td>{{ servico.tipo_servico }}</td>
+                <td>{{ servico.data_servico|date:"d/m/Y" }}</td>
+                {% if user.is_staff %}
+                <td>{{ servico.fechado_por.username }}</td>
+                {% endif %}
+                <td class="text-end">R$ {{ servico.valor|floatformat:2|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">Nenhum serviço encontrado para este cliente.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if resultados %}
+        <tfoot>
+            <tr>
+                <td colspan="{% if user.is_staff %}2{% else %}1{% endif %}" style="text-align: right;">TOTAIS:</td>
+                <td class="text-center">{{ total_servicos }} serviço(s)</td>
+                <td class="text-end">R$ {{ total_faturamento|floatformat:2|intcomma }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</body>
+</html>

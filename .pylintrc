@@ -1,0 +1,17 @@
+[MASTER]
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+disable=
+    import-error,
+    no-member,
+    no-name-in-module,
+    too-few-public-methods,
+    missing-docstring
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,pk
+
+[DESIGN]
+max-args=10
+max-attributes=15

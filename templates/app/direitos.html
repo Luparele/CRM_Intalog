@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Direitos e Propriedade - Zenith CRM{% endblock %}
+
+{% block content %}
+    <div class="card" style="max-width: 520px; margin: 0 auto;">
+        <div class="card-header">
+            <h1 style="text-align: center;">Direitos e Propriedade</h1>
+        </div>
+        <div class="card-body" style="text-align: justify;">
+            <h5 class="card-title" style="text-align: center;">Desenvolvimento</h5>
+            <p class="card-text" style="text-align: center;">Eduardo Luparele Coelho</p>
+            <hr>
+            <h5 class="card-title" style="text-align: center;">Distribuição & Utilização</h5>
+            <p class="card-text" style="text-align: center;">Intalog Logistica Transportes Ltda</p>
+            <p class="card-text" style="text-align: center;">CNPJ: 13.725.103/0001-60</p>
+            <hr>
+            <h5 class="card-title" style="text-align: center;">Propriedade dos Dados</h5>
+            <p class="card-text" >Todos os dados salvos e gerados por este sistema são de propriedade única e exclusiva da Intalog Logistica Transportes Ltda.</p>
+        </div>
+        <div class="card-footer text-center">
+            <a href="{% url 'app:home' %}" class="btn btn-secondary">Voltar</a>
+        </div>
+    </div>
+{% endblock %}

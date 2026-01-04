@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Gerenciar Usuários{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Usuários do Sistema</h1>
+        {# O botão de adicionar foi movido para a Navbar conforme solicitado #}
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Username</th>
+                    <th>E-mail</th>
+                    <th>Setor</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rep in representantes %}
+                <tr style="cursor: pointer;"
+                    hx-get="{% url 'app:detalhe-representante' rep.pk %}"
+                    hx-target="#main-modal-content"
+                    data-bs-toggle="modal"
+                    data-bs-target="#main-modal">
+                
+                    <td>{{ rep.get_full_name }}</td>
+                    <td>{{ rep.username }}</td>
+                    <td>{{ rep.email }}</td>
+                    <td><span class="badge bg-info text-dark">{{ rep.profile.get_setor_display }}</span></td>
+                    <td>
+                        {% if rep.profile.status == 'ATIVO' %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_staff or user.profile.tem_acesso_gestao %}
+                        <a href="{% url 'app:representante-update' rep.pk %}" class="btn btn-sm btn-secondary" onclick="event.stopPropagation();">Editar</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">Nenhum usuário encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

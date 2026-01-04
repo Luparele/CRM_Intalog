@@ -1,0 +1,19 @@
+<h6>Ações Registradas:</h6>
+<ul class="list-unstyled">
+    {% for acao in tarefa.acoes.all %}
+    <li class="mb-2">
+        <p class="mb-0">
+            "{{ acao.descricao }}"
+            {# --- Link do Arquivo --- #}
+            {% if acao.arquivo %}
+                <a href="{{ acao.arquivo.url }}" target="_blank" class="ms-2 text-decoration-none" title="Visualizar Anexo">
+                    <i class="bi bi-paperclip"></i> Ver anexo
+                </a>
+            {% endif %}
+        </p>
+        <small class="text-muted">- por {{ acao.registrado_por.username }} em {{ acao.data_registro|date:"d/m/Y" }} às {{ acao.data_registro|time:"H:i" }}</small>
+    </li>
+    {% empty %}
+    <p class="text-muted">Nenhuma ação registrada ainda.</p>
+    {% endfor %}
+</ul>

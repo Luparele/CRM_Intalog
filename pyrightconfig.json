@@ -1,0 +1,32 @@
+{
+    "include": [
+        "app",
+        "CRM_Comercial"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/migrations"
+    ],
+    "venvPath": ".",
+    "venv": "venv",
+    "pythonVersion": "3.12",
+    "pythonPlatform": "Windows",
+    "typeCheckingMode": "basic",
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "reportMissingTypeStubs": false,
+    "reportUnusedImport": "warning",
+    "reportUnusedVariable": "warning",
+    "stubPath": "",
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "pythonVersion": "3.12",
+            "pythonPlatform": "Windows",
+            "extraPaths": [
+                "./venv/Lib/site-packages"
+            ]
+        }
+    ]
+}

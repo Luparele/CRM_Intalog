@@ -1,0 +1,63 @@
+{% load django_bootstrap5 %}
+
+<div class="modal-header">
+    <h5 class="modal-title">{{ tarefa.titulo }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <h6>Descrição:</h6>
+    <p>{{ tarefa.descricao|linebreaksbr }}</p>
+    <hr>
+    
+    <h6>Histórico da Tarefa:</h6>
+    <p class="mb-0"><strong>Criado por:</strong> {{ tarefa.criado_por.username }} em {{ tarefa.data_criacao|date:"d/m/Y" }} às {{ tarefa.data_criacao|time:"H:i" }}</p>
+    {% if tarefa.iniciado_por %}
+    <p class="mb-0"><strong>Tratativa Iniciada por:</strong> {{ tarefa.iniciado_por.username }} em {{ tarefa.data_inicio|date:"d/m/Y" }} às {{ tarefa.data_inicio|time:"H:i" }}</p>
+    {% endif %}
+    {% if tarefa.finalizado_por %}
+    <p class="mb-0"><strong>Finalizado por:</strong> {{ tarefa.finalizado_por.username }} em {{ tarefa.data_finalizacao|date:"d/m/Y" }} às {{ tarefa.data_finalizacao|time:"H:i" }}</p>
+    {% endif %}
+    <hr>
+
+    <div id="acoes-container">
+        {% include 'app/partials/_acoes_list.html' %}
+    </div>
+
+    {% if tarefa.status == 'INICIADA' %}
+    <hr>
+    {# --- CORREÇÃO AQUI: Adicionado hx-encoding="multipart/form-data" --- #}
+    <form hx-post="{% url 'app:gravar-acao' tarefa.id %}" 
+          hx-target="#acoes-container" 
+          hx-swap="innerHTML"
+          enctype="multipart/form-data"
+          hx-encoding="multipart/form-data">
+        {% csrf_token %}
+        {% bootstrap_form acao_form %}
+        <button type="submit" class="btn btn-info">Gravar Ação</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="modal-footer justify-content-between">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+
+    <div>
+        {% if tarefa.status == 'NAO_INICIADA' %}
+        <form class="d-inline" 
+              hx-post="{% url 'app:iniciar-tarefa' tarefa.id %}" 
+              hx-confirm="Você tem certeza que deseja iniciar esta tarefa?"
+              hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">Iniciar Tarefa</button>
+        </form>
+        {% elif tarefa.status == 'INICIADA' %}
+        <form class="d-inline" 
+              hx-post="{% url 'app:finalizar-tarefa' tarefa.id %}" 
+              hx-confirm="Você tem certeza que deseja finalizar esta tarefa? Nenhuma outra ação poderá ser registrada."
+              hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Finalizar Tarefa</button>
+        </form>
+        {% endif %}
+    </div>
+</div>

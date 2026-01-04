@@ -1,0 +1,35 @@
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="id_mes" class="form-label">Mês</label>
+                <select name="mes" id="id_mes" class="form-select">
+                    {% for num, nome in meses_disponiveis %}
+                        <option value="{{ num }}" {% if num == mes_selecionado %}selected{% endif %}>{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label for="id_ano" class="form-label">Ano</label>
+                <select name="ano" id="id_ano" class="form-select">
+                    {% for ano in anos_disponiveis %}
+                        <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>{{ ano }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto mt-auto">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Script para submeter o formulário automaticamente ao mudar a seleção
+    document.getElementById('id_mes').addEventListener('change', function() {
+        this.form.submit();
+    });
+    document.getElementById('id_ano').addEventListener('change', function() {
+        this.form.submit();
+    });
+</script>

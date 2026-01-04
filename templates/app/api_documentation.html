@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Documentação da API REST - Zenith CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 bg-light sidebar" style="position: sticky; top: 0; height: 100vh; overflow-y: auto;">
+            <div class="pt-3">
+                <h6 class="px-3 mt-4 mb-1 text-muted">Navegação</h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="#introducao"><i class="bi bi-house-door"></i> Introdução</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#autenticacao"><i class="bi bi-key"></i> Autenticação</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#endpoints"><i class="bi bi-list-ul"></i> Endpoints</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#usuarios"><i class="bi bi-people"></i> Usuários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#clientes"><i class="bi bi-building"></i> Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#servicos"><i class="bi bi-truck"></i> Serviços</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#dashboard"><i class="bi bi-graph-up"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#codigos"><i class="bi bi-code-slash"></i> Códigos HTTP</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#exemplos"><i class="bi bi-file-code"></i> Exemplos</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="bi bi-code-square"></i> Documentação da API REST</h1>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimir
+                </button>
+            </div>
+
+            <!-- Introdução -->
+            <section id="introducao" class="mb-5">
+                <h2>Introdução</h2>
+                <p class="lead">A API REST do Zenith CRM permite integração com sistemas externos.</p>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> <strong>Atenção:</strong> Esta documentação é exclusiva para administradores.
+                </div>
+
+                <h4>URL Base</h4>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <code>http://{{ request.get_host }}/api/</code>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Autenticação -->
+            <section id="autenticacao" class="mb-5">
+                <h2>Autenticação</h2>
+                <p>A API utiliza <strong>autenticação por sessão</strong>.</p>
+                
+                <h4>Exemplo com Python</h4>
+                <pre class="bg-dark text-white p-3 rounded"><code>import requests
+
+session = requests.Session()
+session.post('http://{{ request.get_host }}/login/', data={
+    'username': 'usuario',
+    'password': 'senha'
+})
+
+# Usar sessão nas requisições
+response = session.get('http://{{ request.get_host }}/api/clientes/')
+clientes = response.json()</code></pre>
+            </section>
+
+            <!-- Endpoints -->
+            <section id="endpoints" class="mb-5">
+                <h2>Endpoints Disponíveis</h2>
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Método</th>
+                            <th>Endpoint</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/usuarios/</code></td><td>Listar usuários</td></tr>
+                        <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/clientes/</code></td><td>Listar clientes</td></tr>
+                        <tr><td><span class="badge bg-warning">POST</span></td><td><code>/api/clientes/</code></td><td>Criar cliente</td></tr>
+                        <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/servicos/</code></td><td>Listar serviços</td></tr>
+                        <tr><td><span class="badge bg-warning">POST</span></td><td><code>/api/servicos/</code></td><td>Criar serviço</td></tr>
+                        <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/dashboard/mensal/</code></td><td>Dashboard mensal</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Usuários -->
+            <section id="usuarios" class="mb-5">
+                <h2>Usuários</h2>
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><span class="badge bg-light text-dark">GET</span> /api/usuarios/</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Resposta (200 OK)</h6>
+                        <pre class="bg-light p-3"><code>{
+  "count": 5,
+  "results": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "full_name": "Admin Sistema",
+      "profile": {
+        "setor": "ADMIN",
+        "tem_acesso_gestao": true
+      }
+    }
+  ]
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Clientes -->
+            <section id="clientes" class="mb-5">
+                <h2>Clientes</h2>
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5><span class="badge bg-light text-dark">GET</span> /api/clientes/</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Query Parameters</h6>
+                        <ul>
+                            <li><code>search</code> - Buscar por razão social ou CNPJ</li>
+                        </ul>
+                        <h6>Resposta</h6>
+                        <pre class="bg-light p-3"><code>{
+  "count": 10,
+  "results": [
+    {
+      "id": 1,
+      "cnpj": "12345678000190",
+      "razao_social": "Empresa Exemplo LTDA",
+      "endereco": "Rua Exemplo, 123",
+      "nome_contato": "João Silva",
+      "telefone_contato": "(11) 98765-4321"
+    }
+  ]
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h5><span class="badge bg-dark">POST</span> /api/clientes/</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Request Body</h6>
+                        <pre class="bg-light p-3"><code>{
+  "cnpj": "12345678000190",
+  "razao_social": "Empresa Exemplo LTDA",
+  "endereco": "Rua Exemplo, 123",
+  "nome_contato": "João Silva",
+  "telefone_contato": "(11) 98765-4321"
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Serviços -->
+            <section id="servicos" class="mb-5">
+                <h2>Serviços</h2>
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5><span class="badge bg-light text-dark">GET</span> /api/servicos/</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Query Parameters</h6>
+                        <ul>
+                            <li><code>ano</code> - Ano (ex: 2024)</li>
+                            <li><code>mes</code> - Mês (ex: 12)</li>
+                            <li><code>cliente</code> - ID do cliente</li>
+                        </ul>
+                        <h6>Exemplo</h6>
+                        <pre class="bg-dark text-white p-3"><code>GET /api/servicos/?ano=2024&mes=12</code></pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h5><span class="badge bg-dark">POST</span> /api/servicos/</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Request Body</h6>
+                        <pre class="bg-light p-3"><code>{
+  "cliente": 1,
+  "tipo_servico": 1,
+  "data_servico": "2025-01-10",
+  "quantidade": 5,
+  "valor": "7500.00"
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard -->
+            <section id="dashboard" class="mb-5">
+                <h2>Dashboard</h2>
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><span class="badge bg-light text-dark">GET</span> /api/dashboard/mensal/</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Query Parameters</h6>
+                        <ul>
+                            <li><code>mes</code> - Mês (padrão: atual)</li>
+                            <li><code>ano</code> - Ano (padrão: atual)</li>
+                        </ul>
+                        <h6>Resposta</h6>
+                        <pre class="bg-light p-3"><code>{
+  "mes": 12,
+  "ano": 2024,
+  "faturamento_total": "3615000.00",
+  "quantidade_servicos": 125,
+  "meta_valor": "5000000.00",
+  "percentual_meta": 72.3,
+  "dias_restantes": 0
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Códigos -->
+            <section id="codigos" class="mb-5">
+                <h2>Códigos de Status HTTP</h2>
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr><th>Código</th><th>Descrição</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="badge bg-success">200</span></td><td>OK - Sucesso</td></tr>
+                        <tr><td><span class="badge bg-success">201</span></td><td>Created - Recurso criado</td></tr>
+                        <tr><td><span class="badge bg-warning">400</span></td><td>Bad Request - Dados inválidos</td></tr>
+                        <tr><td><span class="badge bg-warning">401</span></td><td>Unauthorized - Não autenticado</td></tr>
+                        <tr><td><span class="badge bg-warning">403</span></td><td>Forbidden - Sem permissão</td></tr>
+                        <tr><td><span class="badge bg-danger">404</span></td><td>Not Found - Não encontrado</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Exemplos -->
+            <section id="exemplos" class="mb-5">
+                <h2>Exemplos de Integração</h2>
+                
+                <h4>Python</h4>
+                <pre class="bg-dark text-white p-3"><code>import requests
+
+class ZenithCRM:
+    def __init__(self, base_url, username, password):
+        self.session = requests.Session()
+        self.session.post(f'{base_url}/login/', data={
+            'username': username,
+            'password': password
+        })
+        self.base_url = base_url
+    
+    def listar_clientes(self):
+        return self.session.get(f'{self.base_url}/api/clientes/').json()
+    
+    def dashboard_mensal(self, mes, ano):
+        return self.session.get(
+            f'{self.base_url}/api/dashboard/mensal/',
+            params={'mes': mes, 'ano': ano}
+        ).json()
+
+# Uso
+crm = ZenithCRM('http://{{ request.get_host }}', 'admin', 'senha')
+clientes = crm.listar_clientes()
+dashboard = crm.dashboard_mensal(12, 2024)</code></pre>
+
+                <h4 class="mt-4">cURL</h4>
+                <pre class="bg-dark text-white p-3"><code># Login e salvar cookie
+curl -c cookies.txt -X POST http://{{ request.get_host }}/login/ \
+  -d "username=admin&password=senha"
+
+# Listar clientes
+curl -b cookies.txt http://{{ request.get_host }}/api/clientes/</code></pre>
+            </section>
+
+            <div class="alert alert-secondary mt-5">
+                <h5><i class="bi bi-info-circle"></i> Suporte</h5>
+                <p class="mb-0">Para dúvidas, entre em contato com a equipe de TI.</p>
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .sidebar, .navbar, footer {
+            display: none !important;
+        }
+    }
+    .sidebar .nav-link {
+        color: #333;
+    }
+    .sidebar .nav-link:hover {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %}

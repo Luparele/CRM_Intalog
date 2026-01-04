@@ -1,0 +1,76 @@
+{% load django_bootstrap5 %}
+
+<form hx-post="{% url 'app:salvar-cliente-prospeccao' %}" 
+      hx-target="#main-modal-content" 
+      hx-swap="innerHTML"
+      hx-on="htmx:afterRequest: bootstrap.Modal.getInstance(document.getElementById('secondary-modal')).hide()">
+    
+    {% csrf_token %}
+    
+    <div class="modal-header">
+        <h5 class="modal-title">Novo Prospect</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    
+    <div class="modal-body">
+        {% bootstrap_form form %}
+    </div>
+    
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Prospect</button>
+    </div>
+</form>
+
+{# --- SCRIPT DE CONSULTA DE CNPJ --- #}
+<script>
+    (function() {
+        const cnpjInput = document.getElementById('id_cnpj');
+        const razaoSocialInput = document.getElementById('id_razao_social');
+
+        if (cnpjInput) {
+            cnpjInput.addEventListener('blur', function() {
+                // Limpa o CNPJ para enviar à API
+                const cnpj = this.value.replace(/[^\d]/g, ''); 
+
+                if (cnpj.length === 14) {
+                    // Monta a URL da nossa API interna
+                    const url = `/api/consulta-cnpj/${cnpj}/`;
+
+                    // Feedback visual de carregamento
+                    razaoSocialInput.value = "Buscando...";
+                    razaoSocialInput.disabled = true;
+
+                    fetch(url)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('CNPJ não encontrado ou inválido.');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.error) {
+                                alert(data.error);
+                                razaoSocialInput.value = "";
+                            } else {
+                                // Preenche a Razão Social
+                                razaoSocialInput.value = data.razao_social;
+                                // Nota: Prospects não têm campo de endereço no form padrão, 
+                                // então ignoramos o endereço retornado pela API.
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            // Em caso de erro silencioso ou de rede, limpa o campo
+                            if (razaoSocialInput.value === "Buscando...") {
+                                razaoSocialInput.value = "";
+                            }
+                        })
+                        .finally(() => {
+                            razaoSocialInput.disabled = false;
+                        });
+                }
+            });
+        }
+    })();
+</script>

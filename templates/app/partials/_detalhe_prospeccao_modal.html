@@ -1,0 +1,108 @@
+{% load humanize %}
+{% load django_bootstrap5 %}
+
+<div class="modal-header">
+    <h5 class="modal-title">Prospecção: {{ prospeccao.cliente.razao_social }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <div class="row mb-3">
+                <div class="col-md-6"><strong>Tipo de Serviço:</strong> {{ prospeccao.tipo_servico.nome }}</div>
+                <div class="col-md-6"><strong>Duração Estimada:</strong> {{ prospeccao.duracao_meses }} meses</div>
+                <div class="col-md-6"><strong>Viagens Estimadas:</strong> {{ prospeccao.viagens_aproximadas }}</div>
+                <div class="col-md-6"><strong>Valor Médio por Viagem:</strong> R$ {{ prospeccao.valor_medio_viagem|floatformat:2|intcomma }}</div>
+                <div class="col-md-12 mt-2"><strong>Valor Total Estimado:</strong> <span class="fs-5">R$ {{ prospeccao.valor_total|floatformat:2|intcomma }}</span></div>
+            </div>
+        </div>
+        {% if prospeccao.status in 'NOVA,NEGOCIANDO' %}
+        <div>
+            <button class="btn btn-sm btn-outline-secondary"
+                    hx-get="{% url 'app:editar-prospeccao' prospeccao.id %}"
+                    hx-target="#main-modal-content"
+                    hx-swap="innerHTML">
+                Editar
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    <hr>
+    <h6>Histórico:</h6>
+    <p class="mb-0"><strong>Criado por:</strong> {{ prospeccao.criado_por.username }} em {{ prospeccao.data_criacao|date:"d/m/Y" }} às {{ prospeccao.data_criacao|time:"H:i" }}</p>
+    {% if prospeccao.iniciado_por %}
+    <p class="mb-0"><strong>Negociação Iniciada por:</strong> {{ prospeccao.iniciado_por.username }} em {{ prospeccao.data_inicio_negociacao|date:"d/m/Y" }} às {{ prospeccao.data_inicio_negociacao|time:"H:i" }}</p>
+    {% endif %}
+    {% if prospeccao.finalizado_por %}
+    <p class="mb-0"><strong>Finalizado por:</strong> {{ prospeccao.finalizado_por.username }} em {{ prospeccao.data_finalizacao|date:"d/m/Y" }} às {{ prospeccao.data_finalizacao|time:"H:i" }}</p>
+    {% endif %}
+    <hr>
+
+    <div id="acoes-prospeccao-container">
+        {% include 'app/partials/_acoes_prospeccao_list.html' %}
+    </div>
+
+    {% if prospeccao.status == 'NEGOCIANDO' %}
+    <hr>
+    {# --- CORREÇÃO AQUI: Adicionado hx-encoding="multipart/form-data" --- #}
+    <form hx-post="{% url 'app:gravar-acao-prospeccao' prospeccao.id %}" 
+          hx-target="#acoes-prospeccao-container" 
+          hx-swap="innerHTML"
+          enctype="multipart/form-data"
+          hx-encoding="multipart/form-data">
+        {% csrf_token %}
+        {% bootstrap_form acao_form %}
+        <button type="submit" class="btn btn-info">Gravar Ação</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="modal-footer justify-content-between">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+    <div>
+        {% if prospeccao.status == 'NOVA' %}
+        <form class="d-inline" 
+              hx-post="{% url 'app:iniciar-prospeccao' prospeccao.id %}" 
+              hx-confirm="Você tem certeza que deseja iniciar a negociação?"
+              hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">Iniciar Negociação</button>
+        </form>
+        {% elif prospeccao.status == 'NEGOCIANDO' %}
+        <div class="dropup">
+            <button class="btn btn-success dropdown-toggle" type="button" id="dropdownFinalizar" data-bs-toggle="dropdown" aria-expanded="false">
+                Finalizar Prospecção
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="dropdownFinalizar">
+                <li>
+                    <form hx-post="{% url 'app:finalizar-prospeccao' prospeccao.id %}" 
+                          hx-confirm="Confirmar finalização como 'Serviço Fechado'?"
+                          hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="FECHADO">
+                        <button type="submit" class="dropdown-item">Serviço Fechado</button>
+                    </form>
+                </li>
+                <li>
+                    <form hx-post="{% url 'app:finalizar-prospeccao' prospeccao.id %}" 
+                          hx-confirm="Confirmar finalização como 'Desistência do Cliente'?"
+                          hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="DESISTENCIA">
+                        <button type="submit" class="dropdown-item">Desistência do Cliente</button>
+                    </form>
+                </li>
+                <li>
+                    <form hx-post="{% url 'app:finalizar-prospeccao' prospeccao.id %}" 
+                          hx-confirm="Confirmar finalização como 'Negociação Perdida'?"
+                          hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="PERDIDA">
+                        <button type="submit" class="dropdown-item">Negociação Perdida</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>

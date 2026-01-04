@@ -1,0 +1,32 @@
+{% load django_bootstrap5 %}
+<form hx-post="{% url 'app:criar-prospeccao' %}"
+      hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+    {% csrf_token %}
+    <div class="modal-header">
+        <h5 class="modal-title">Nova Prospecção</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3">
+            <label for="{{ form.cliente.id_for_label }}" class="form-label required">Cliente</label>
+            <div class="input-group">
+                {{ form.cliente }}
+                <button class="btn btn-outline-primary" type="button"
+                        hx-get="{% url 'app:criar-cliente-prospeccao-modal' %}"
+                        hx-target="#secondary-modal-content"
+                        hx-on="htmx:afterRequest: new bootstrap.Modal(document.getElementById('secondary-modal')).show()">
+                    +
+                </button>
+            </div>
+        </div>
+        {% bootstrap_field form.tipo_servico %}
+        {% bootstrap_field form.duracao_meses %}
+        {% bootstrap_field form.viagens_aproximadas %}
+        {% bootstrap_field form.valor_medio_viagem %}
+        <p class="form-text text-muted mt-2">O "Valor Total" será calculado automaticamente.</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Criar Prospecção</button>
+    </div>
+</form>

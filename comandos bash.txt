@@ -1,0 +1,25 @@
+Fazer o backup em (main) do pythonanywhere:
+zip -r backup_intalog_$(date +%Y-%m-%d).zip Intalog .
+
+ativar máquina virtual no Pythonanywhere:
+workon intalog-venv
+
+realizar as migrações:
+python manage.py makemigrations
+python manage.py migrate
+
+Instalar máquina virtual no ambiente de desenvolvimento:
+python -m venv venv
+
+Ativar máquina virtual no ambiente de desenvolvimento:
+.\venv\Scripts\activate
+
+Rodar o servidor no ambiente de desenvolvimento:
+python manage.py runserver
+
+instalar requirements no ambiente de desenvolvimento:
+pip install -r requirements.txt
+
+fazer backup do projeto no ambiente de desenvolvimento:
+New-Item -ItemType Directory -Force -Path "backups"; Get-ChildItem -Path . -Exclude "venv", "backups" | Compress-Archive -DestinationPath "backups\backup_CRM_Comercial_$(Get-Date -Format 'dd-MM-yyyy').zip"
+

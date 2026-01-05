@@ -947,18 +947,10 @@ coverage report
 
 ---
 
-## 📞 Suporte
-
-Para dúvidas, sugestões ou relato de bugs:
-- **Email:** eduardo.luparele@example.com
-- **GitHub Issues:** [https://github.com/Luparele/zenith-crm/issues](https://github.com/Luparele)
-
----
-
 ## 📜 Licença
 
 Este projeto é **proprietário** e de uso exclusivo da **Intalog Logística**.  
-Todos os direitos reservados © 2024-2026
+Todos os direitos reservados © 2025-2026
 
 ---
 

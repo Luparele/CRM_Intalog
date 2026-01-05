@@ -5,7 +5,7 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView, TemplateView
 from django.contrib.auth.models import User
 from django.contrib.auth import login 
-from django.db.models import Q, Avg, Sum, Count, F, DurationField
+from django.db.models import Q, Avg, Sum, Count, F, DurationField, ProtectedError
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from dateutil.relativedelta import relativedelta
@@ -149,9 +149,9 @@ def get_dashboard_mensal(request):
         'mensal_dias_restantes': dias_rest,
     })
 
+    # Meta agora é por cliente - soma as metas dos clientes do representante ou de todos
     if user.profile.is_representante:
-        meta = Meta.objects.filter(representante=user, mes=mes, ano=ano).first()
-        val_meta = meta.valor if meta else Decimal('0.00')
+        val_meta = Meta.objects.filter(cliente__cadastrado_por=user, mes=mes, ano=ano).aggregate(s=Sum('valor'))['s'] or Decimal('0.00')
     else:
         val_meta = Meta.objects.filter(mes=mes, ano=ano).aggregate(s=Sum('valor'))['s'] or Decimal('0.00')
     
@@ -169,16 +169,16 @@ def get_dashboard_mensal(request):
         perf = []
         for rep in User.objects.filter(profile__setor='REPRESENTANTE', is_active=True).order_by('first_name'):
             f_rep = Servico.objects.filter(cliente__cadastrado_por=rep, data_servico__year=ano, data_servico__month=mes).aggregate(s=Sum('valor'))['s'] or 0
-            m_rep = Meta.objects.filter(representante=rep, mes=mes, ano=ano).first()
-            v_meta = m_rep.valor if m_rep else 0
+            # Meta agora é por cliente - soma todas as metas dos clientes do representante
+            v_meta = Meta.objects.filter(cliente__cadastrado_por=rep, mes=mes, ano=ano).aggregate(s=Sum('valor'))['s'] or 0
             p_rep = (f_rep / v_meta * 100) if v_meta > 0 else 0
             perf.append({
                 'nome': rep.get_full_name() or rep.username, 
                 'faturamento': f_rep, 
                 'meta': v_meta, 
-                'percentual_individual': p_rep  # ← CORRIGIDO AQUI
+                'percentual_individual': p_rep
             })
-        perf.sort(key=lambda x: x['percentual_individual'], reverse=True)  # ← E AQUI
+        perf.sort(key=lambda x: x['percentual_individual'], reverse=True)
         context['representantes_performance'] = perf
 
     return render(request, 'app/partials/_dashboard_mensal.html', context)
@@ -347,10 +347,13 @@ class RepresentanteCreateView(LoginRequiredMixin, GestaoRequiredMixin, CreateVie
         if profile_form.is_valid():
             self.object = form.save(commit=False)
             self.object.set_password('mudarsenha')
-            self.object.save()
+            self.object.save()  # Signal post_save já cria o Profile automaticamente
             
-            profile = profile_form.save(commit=False)
-            profile.user = self.object
+            # Atualiza o Profile criado pelo signal com os dados do formulário
+            profile = self.object.profile  # Pega o profile já criado pelo signal
+            profile.telefone = profile_form.cleaned_data.get('telefone')
+            profile.setor = profile_form.cleaned_data.get('setor')
+            profile.status = profile_form.cleaned_data.get('status')
             profile.save()
             return redirect(self.success_url)
         return self.render_to_response(self.get_context_data(form=form))
@@ -398,9 +401,12 @@ def detalhe_representante(request, pk):
     total_vendas_valor = vendas_mes_atual.aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
     total_vendas_qtd = vendas_mes_atual.aggregate(total=Sum('quantidade'))['total'] or 0
 
-    # Meta do Mês (Por Representante)
-    meta_obj = Meta.objects.filter(representante=representante, ano=hoje.year, mes=hoje.month).first()
-    total_meta_valor = meta_obj.valor if meta_obj else Decimal('0.00')
+    # Meta do Mês (Somatório das metas dos clientes do representante)
+    total_meta_valor = Meta.objects.filter(
+        cliente__cadastrado_por=representante, 
+        ano=hoje.year, 
+        mes=hoje.month
+    ).aggregate(s=Sum('valor'))['s'] or Decimal('0.00')
     meta_mes_atual = {'valor': total_meta_valor} if total_meta_valor > 0 else None
 
     prospeccoes = Prospeccao.objects.filter(criado_por=representante)
@@ -536,6 +542,31 @@ class ClienteDeleteView(LoginRequiredMixin, ClienteEditorMixin, DeleteView):
     template_name = 'app/cliente_confirm_delete.html'
     success_url = reverse_lazy('app:cliente-list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Verifica se há serviços vinculados e adiciona ao contexto
+        cliente = self.get_object()
+        servicos_count = Servico.objects.filter(cliente=cliente).count()
+        context['servicos_count'] = servicos_count
+        context['pode_excluir'] = servicos_count == 0
+        return context
+
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError:
+            # Cliente tem serviços vinculados, não pode ser excluído
+            cliente = self.get_object()
+            servicos_count = Servico.objects.filter(cliente=cliente).count()
+            context = {
+                'object': cliente,
+                'cliente': cliente,
+                'servicos_count': servicos_count,
+                'pode_excluir': False,
+                'erro_protecao': True,
+            }
+            return render(request, self.template_name, context)
+
 @login_required
 def promover_prospect_modal(request, pk):
     """ Exibe modal para promover um prospect a cliente. """
@@ -616,6 +647,10 @@ class ServicoListView(LoginRequiredMixin, TemplateView):
         else:
             representantes = User.objects.filter(is_active=True, profile__setor='REPRESENTANTE').order_by('first_name')
         
+        # Busca todas as metas do mês POR CLIENTE
+        metas_qs = Meta.objects.filter(mes=mes, ano=ano)
+        metas_map = {m.cliente_id: m for m in metas_qs}
+        
         servicos_qs = Servico.objects.filter(data_servico__year=ano, data_servico__month=mes)
         servicos_map = defaultdict(list)
         for s in servicos_qs:
@@ -625,12 +660,13 @@ class ServicoListView(LoginRequiredMixin, TemplateView):
         context['sem_lancamentos'] = not servicos_qs.exists()
 
         for rep in representantes:
-            meta_rep_obj = Meta.objects.filter(representante=rep, mes=mes, ano=ano).first()
-            total_meta_rep = meta_rep_obj.valor if meta_rep_obj else Decimal('0.00')
-
             clientes_rep = Cliente.objects.filter(cadastrado_por=rep).order_by('razao_social')
             dados_clientes = []
             total_faturamento_rep = Decimal('0.00')
+            total_meta_rep = Decimal('0.00')
+            
+            # Pega dias úteis da primeira meta encontrada (ou default 22)
+            dias_uteis_padrao = 22
             
             for cliente in clientes_rep:
                 servicos_cliente = servicos_map.get(cliente.id, [])
@@ -638,15 +674,47 @@ class ServicoListView(LoginRequiredMixin, TemplateView):
                 faturamento_bruto = sum(s.valor for s in servicos_cliente)
                 
                 total_faturamento_rep += faturamento_bruto
+                
+                # Busca meta do CLIENTE
+                meta_cliente_obj = metas_map.get(cliente.id)
+                meta_valor = meta_cliente_obj.valor if meta_cliente_obj else Decimal('0.00')
+                dias_uteis = meta_cliente_obj.dias_uteis if meta_cliente_obj else dias_uteis_padrao
+                
+                # Soma para o total do representante
+                total_meta_rep += meta_valor
+                
+                # Atualiza dias úteis padrão se encontrou meta
+                if meta_cliente_obj:
+                    dias_uteis_padrao = dias_uteis
+                
+                # Cálculos de performance POR CLIENTE
+                tem_meta = meta_valor > 0
+                percentual_atingido = (faturamento_bruto / meta_valor * 100) if meta_valor > 0 else 0
+                valor_faltante = max(Decimal('0.00'), meta_valor - faturamento_bruto)
+                percentual_faltante = 100 - percentual_atingido if percentual_atingido < 100 else 0
+                meta_diaria = meta_valor / dias_uteis if dias_uteis > 0 else Decimal('0.00')
 
                 dados_clientes.append({
                     'cliente': cliente, 
                     'total_viagens': total_viagens, 
                     'faturamento_bruto': faturamento_bruto,
+                    # Campos de meta por cliente
+                    'tem_meta': tem_meta,
+                    'meta': meta_cliente_obj,
+                    'meta_valor': meta_valor,
+                    'dias_uteis': dias_uteis,
+                    'percentual_atingido': percentual_atingido,
+                    'valor_faltante': valor_faltante,
+                    'percentual_faltante': percentual_faltante,
+                    'meta_diaria': meta_diaria,
                 })
             
             if dados_clientes or rep == user:
+                # Cálculos de performance do REPRESENTANTE (somatório das metas dos clientes)
                 percentual_total_rep = (total_faturamento_rep / total_meta_rep * 100) if total_meta_rep > 0 else 0
+                valor_faltante_rep = max(Decimal('0.00'), total_meta_rep - total_faturamento_rep)
+                percentual_faltante_rep = 100 - percentual_total_rep if percentual_total_rep < 100 else 0
+                meta_diaria_rep = total_meta_rep / dias_uteis_padrao if dias_uteis_padrao > 0 else Decimal('0.00')
                 
                 lista_por_representante.append({
                     'representante': rep,
@@ -654,7 +722,11 @@ class ServicoListView(LoginRequiredMixin, TemplateView):
                     'resumo': {
                         'faturamento': total_faturamento_rep,
                         'meta': total_meta_rep,
-                        'percentual': percentual_total_rep
+                        'percentual': percentual_total_rep,
+                        'dias_uteis': dias_uteis_padrao,
+                        'valor_faltante': valor_faltante_rep,
+                        'percentual_faltante': percentual_faltante_rep,
+                        'meta_diaria': meta_diaria_rep,
                     }
                 })
 
@@ -764,13 +836,13 @@ class MetaListView(LoginRequiredMixin, ListView):
         except (ValueError, TypeError):
             self.selected_year = date.today().year
 
-        queryset = Meta.objects.filter(ano=self.selected_year)
+        queryset = Meta.objects.filter(ano=self.selected_year).select_related('cliente', 'cliente__cadastrado_por')
         
-        # Rep vê apenas suas metas
+        # Rep vê apenas metas dos seus clientes
         if self.request.user.profile.is_representante:
-            queryset = queryset.filter(representante=self.request.user)
+            queryset = queryset.filter(cliente__cadastrado_por=self.request.user)
             
-        return queryset.order_by('-mes', 'representante__first_name')
+        return queryset.order_by('-mes', 'cliente__razao_social')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

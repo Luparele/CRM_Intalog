@@ -90,15 +90,12 @@ class ServicoForm(forms.ModelForm):
 class MetaForm(forms.ModelForm):
     class Meta:
         model = Meta
-        fields = ['representante', 'mes', 'ano', 'dias_uteis', 'valor']
+        fields = ['cliente', 'mes', 'ano', 'dias_uteis', 'valor']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['representante'].queryset = User.objects.filter(
-            profile__setor='REPRESENTANTE', 
-            is_active=True
-        ).order_by('first_name')
-        self.fields['representante'].label = "Representante Comercial"
+        self.fields['cliente'].queryset = Cliente.objects.order_by('razao_social')
+        self.fields['cliente'].label = "Cliente"
 
 class CustomAuthenticationForm(AuthenticationForm):
     def confirm_login_allowed(self, user):

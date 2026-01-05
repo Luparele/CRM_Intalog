@@ -20,6 +20,7 @@ class Profile(models.Model):
     SETOR_CHOICES = [
         ('REPRESENTANTE', 'Representante Comercial'),
         ('COMERCIAL', 'Diretoria Comercial'),
+        ('DIRETORIA', 'Diretoria'),
         ('ADMIN', 'Administrativo (TI/Sistema)'),
     ]
 
@@ -51,13 +52,17 @@ class Profile(models.Model):
         return self.setor == 'COMERCIAL'
     
     @property
+    def is_diretoria(self):
+        return self.setor == 'DIRETORIA'
+    
+    @property
     def is_admin_sistema(self):
         return self.setor == 'ADMIN'
         
     @property
     def tem_acesso_gestao(self):
-        # Agora Comercial e Admin têm acesso total
-        return self.setor in ['COMERCIAL', 'ADMIN']
+        # Comercial, Diretoria e Admin têm acesso total (exceto Admin Django)
+        return self.setor in ['COMERCIAL', 'DIRETORIA', 'ADMIN']
 
 class Cliente(models.Model):
     cnpj = models.CharField(max_length=18, verbose_name="CNPJ") 
@@ -129,24 +134,24 @@ class Servico(models.Model):
         return f"{tipo_servico_nome} para {self.cliente.razao_social}"
 
 class Meta(models.Model):
-    representante = models.ForeignKey(
-        User,
+    cliente = models.ForeignKey(
+        Cliente,
         on_delete=models.CASCADE,
         related_name='metas',
-        verbose_name="Representante"
+        verbose_name="Cliente"
     )
     
     mes = models.PositiveSmallIntegerField(verbose_name="Mês Base")
     ano = models.PositiveIntegerField(verbose_name="Ano Base")
-    dias_uteis = models.PositiveIntegerField(verbose_name="Dias Úteis", default=20)
+    dias_uteis = models.PositiveIntegerField(verbose_name="Dias Úteis", default=22)
     valor = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Meta a ser alcançada (R$)")
 
     class Meta:
-        ordering = ['-ano', '-mes', 'representante']
-        unique_together = ('representante', 'mes', 'ano')
+        ordering = ['-ano', '-mes', 'cliente']
+        unique_together = ('cliente', 'mes', 'ano')
 
     def __str__(self):
-        return f"{self.representante.username} - {self.mes}/{self.ano}"
+        return f"{self.cliente.razao_social} - {self.mes}/{self.ano}"
 
 class Tarefa(models.Model):
     STATUS_CHOICES = [

@@ -10,6 +10,7 @@ cssselect2==0.8.0
 Django==5.2.7
 django-bootstrap5==25.2
 django-debug-toolbar==6.0.0
+djangorestframework==3.16.1
 et_xmlfile==2.0.0
 Faker==37.8.0
 fonttools==4.60.1

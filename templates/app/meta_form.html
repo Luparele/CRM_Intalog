@@ -10,8 +10,8 @@
     <form method="post" novalidate>
         {% csrf_token %}
         
-        {# Campo atualizado para Representante #}
-        {% bootstrap_field form.representante %}
+        {# Campo Cliente #}
+        {% bootstrap_field form.cliente %}
         
         <div class="row">
             <div class="col-md-6">{% bootstrap_field form.mes %}</div>

@@ -50,9 +50,14 @@ class ServicoAdmin(admin.ModelAdmin):
 
 @admin.register(Meta)
 class MetaAdmin(admin.ModelAdmin):
-    list_display = ('representante', 'mes', 'ano', 'valor', 'dias_uteis')
-    list_filter = ('ano', 'mes', 'representante') 
-    search_fields = ('representante__username', 'representante__first_name')
+    list_display = ('cliente', 'get_representante', 'mes', 'ano', 'valor', 'dias_uteis')
+    list_filter = ('ano', 'mes', 'cliente__cadastrado_por') 
+    search_fields = ('cliente__razao_social', 'cliente__cadastrado_por__username')
+    
+    def get_representante(self, obj):
+        return obj.cliente.cadastrado_por.get_full_name() or obj.cliente.cadastrado_por.username
+    get_representante.short_description = 'Representante'
+    get_representante.admin_order_field = 'cliente__cadastrado_por'
 
 class AcaoTarefaInline(admin.TabularInline):
     model = AcaoTarefa

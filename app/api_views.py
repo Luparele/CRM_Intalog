@@ -87,9 +87,13 @@ class DashboardViewSet(viewsets.ViewSet):
         fat_total = base_qs.aggregate(s=Sum('valor'))['s'] or 0
         qtd_total = base_qs.aggregate(c=Sum('quantidade'))['c'] or 0
         
+        # Meta agora é por cliente - soma as metas dos clientes
         if request.user.profile.is_representante:
-            meta = Meta.objects.filter(representante=request.user, mes=mes, ano=ano).first()
-            val_meta = meta.valor if meta else 0
+            val_meta = Meta.objects.filter(
+                cliente__cadastrado_por=request.user, 
+                mes=mes, 
+                ano=ano
+            ).aggregate(s=Sum('valor'))['s'] or 0
         else:
             val_meta = Meta.objects.filter(mes=mes, ano=ano).aggregate(s=Sum('valor'))['s'] or 0
         

@@ -134,17 +134,19 @@ class ServicoCreateSerializer(serializers.ModelSerializer):
 # ===== METAS =====
 
 class MetaSerializer(serializers.ModelSerializer):
-    """Serializer para metas mensais"""
-    representante_nome = serializers.CharField(
-        source='representante.get_full_name',
+    """Serializer para metas mensais por cliente"""
+    cliente_razao_social = serializers.CharField(
+        source='cliente.razao_social',
         read_only=True
     )
+    representante_nome = serializers.SerializerMethodField()
     mes_nome = serializers.SerializerMethodField()
     
     class Meta:
         model = Meta
         fields = [
-            'id', 'representante', 'representante_nome',
+            'id', 'cliente', 'cliente_razao_social',
+            'representante_nome',
             'mes', 'mes_nome', 'ano', 'valor', 'dias_uteis'
         ]
         read_only_fields = ['id']
@@ -152,6 +154,11 @@ class MetaSerializer(serializers.ModelSerializer):
     def get_mes_nome(self, obj):
         import calendar
         return calendar.month_name[obj.mes].capitalize()
+    
+    def get_representante_nome(self, obj):
+        if obj.cliente and obj.cliente.cadastrado_por:
+            return obj.cliente.cadastrado_por.get_full_name() or obj.cliente.cadastrado_por.username
+        return None
 
 
 # ===== TAREFAS =====

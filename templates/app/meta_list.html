@@ -40,6 +40,7 @@
             <thead>
                 <tr>
                     <th>Mês</th>
+                    <th>Cliente</th>
                     <th>Representante</th>
                     <th class="text-center">Dias Úteis</th>
                     <th class="text-end">Meta (R$)</th>
@@ -52,7 +53,8 @@
                 {% for meta in metas %}
                 <tr>
                     <td>{{ meta.mes }}/{{ meta.ano|stringformat:"d" }}</td>
-                    <td>{{ meta.representante.get_full_name|default:meta.representante.username }}</td>
+                    <td>{{ meta.cliente.razao_social }}</td>
+                    <td>{{ meta.cliente.cadastrado_por.get_full_name|default:meta.cliente.cadastrado_por.username }}</td>
                     <td class="text-center">{{ meta.dias_uteis }}</td>
                     <td class="text-end">R$ {{ meta.valor|intcomma }}</td>
                     
@@ -66,7 +68,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="{% if user.profile.tem_acesso_gestao or user.is_staff %}5{% else %}4{% endif %}" class="text-center text-muted py-3">
+                    <td colspan="{% if user.profile.tem_acesso_gestao or user.is_staff %}6{% else %}5{% endif %}" class="text-center text-muted py-3">
                         Nenhuma meta encontrada para este ano.
                     </td>
                 </tr>

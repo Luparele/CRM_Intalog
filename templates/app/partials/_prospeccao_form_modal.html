@@ -1,6 +1,6 @@
 {% load django_bootstrap5 %}
 <form hx-post="{% url 'app:criar-prospeccao' %}"
-      hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+      hx-on::after-request="if(event.detail.successful && event.detail.xhr.status === 204) { location.reload(); }">
     {% csrf_token %}
     <div class="modal-header">
         <h5 class="modal-title">Nova Prospecção</h5>
@@ -10,14 +10,13 @@
         <div class="mb-3">
             <label for="{{ form.cliente.id_for_label }}" class="form-label required">Cliente</label>
             <div class="input-group">
-                {{ form.cliente }}
-                <button class="btn btn-outline-primary" type="button"
-                        hx-get="{% url 'app:criar-cliente-prospeccao-modal' %}"
-                        hx-target="#secondary-modal-content"
-                        hx-on="htmx:afterRequest: new bootstrap.Modal(document.getElementById('secondary-modal')).show()">
-                    +
+                <span id="cliente-select-container">{{ form.cliente }}</span>
+                <button class="btn btn-outline-primary" type="button" id="btn-add-prospect"
+                        onclick="abrirModalNovoProspect()">
+                    <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
+            <small class="form-text text-muted">Selecione um cliente prospect ou clique em + para criar um novo.</small>
         </div>
         {% bootstrap_field form.tipo_servico %}
         {% bootstrap_field form.duracao_meses %}
@@ -30,3 +29,37 @@
         <button type="submit" class="btn btn-primary">Criar Prospecção</button>
     </div>
 </form>
+
+<script>
+function abrirModalNovoProspect() {
+    fetch('{% url "app:criar-cliente-prospeccao-modal" %}')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('secondary-modal-content').innerHTML = html;
+            
+            setTimeout(function() {
+                var secondaryModalEl = document.getElementById('secondary-modal');
+                var secondaryModal = new bootstrap.Modal(secondaryModalEl, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                secondaryModal.show();
+            }, 50);
+        })
+        .catch(error => {
+            console.error('Erro ao carregar formulário:', error);
+            alert('Erro ao abrir formulário de novo cliente.');
+        });
+}
+</script>
+
+<style>
+#cliente-select-container {
+    flex: 1;
+}
+#cliente-select-container select {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    width: 100%;
+}
+</style>

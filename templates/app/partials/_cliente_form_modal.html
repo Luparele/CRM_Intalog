@@ -1,10 +1,6 @@
 {% load django_bootstrap5 %}
 
-<form hx-post="{% url 'app:salvar-cliente-prospeccao' %}" 
-      hx-target="#main-modal-content" 
-      hx-swap="innerHTML"
-      hx-on="htmx:afterRequest: bootstrap.Modal.getInstance(document.getElementById('secondary-modal')).hide()">
-    
+<form id="prospect-form">
     {% csrf_token %}
     
     <div class="modal-header">
@@ -13,64 +9,123 @@
     </div>
     
     <div class="modal-body">
-        {% bootstrap_form form %}
+        <div id="form-errors" class="alert alert-danger d-none"></div>
+        {% bootstrap_field form.cnpj %}
+        {% bootstrap_field form.razao_social %}
+        {% bootstrap_field form.nome_contato %}
+        {% bootstrap_field form.telefone_contato %}
+        {% bootstrap_field form.email_contato %}
+        <p class="form-text text-muted mt-2">Preencha o CNPJ para buscar automaticamente a Razão Social.</p>
     </div>
     
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar Prospect</button>
+        <button type="submit" class="btn btn-primary" id="btn-salvar-prospect">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            Salvar Prospect
+        </button>
     </div>
 </form>
 
-{# --- SCRIPT DE CONSULTA DE CNPJ --- #}
 <script>
-    (function() {
-        const cnpjInput = document.getElementById('id_cnpj');
-        const razaoSocialInput = document.getElementById('id_razao_social');
+(function() {
+    const form = document.getElementById('prospect-form');
+    const btnSalvar = document.getElementById('btn-salvar-prospect');
+    const spinner = btnSalvar.querySelector('.spinner-border');
+    const errorsDiv = document.getElementById('form-errors');
+    
+    // Consulta CNPJ
+    const cnpjInput = document.getElementById('id_cnpj');
+    const razaoSocialInput = document.getElementById('id_razao_social');
 
-        if (cnpjInput) {
-            cnpjInput.addEventListener('blur', function() {
-                // Limpa o CNPJ para enviar à API
-                const cnpj = this.value.replace(/[^\d]/g, ''); 
+    if (cnpjInput && razaoSocialInput) {
+        cnpjInput.addEventListener('blur', function() {
+            const cnpj = this.value.replace(/[^\d]/g, ''); 
 
-                if (cnpj.length === 14) {
-                    // Monta a URL da nossa API interna
-                    const url = `/api/consulta-cnpj/${cnpj}/`;
+            if (cnpj.length === 14) {
+                const url = `/api/consulta-cnpj/${cnpj}/`;
+                razaoSocialInput.value = "Buscando...";
+                razaoSocialInput.disabled = true;
 
-                    // Feedback visual de carregamento
-                    razaoSocialInput.value = "Buscando...";
-                    razaoSocialInput.disabled = true;
-
-                    fetch(url)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('CNPJ não encontrado ou inválido.');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.error) {
-                                alert(data.error);
-                                razaoSocialInput.value = "";
-                            } else {
-                                // Preenche a Razão Social
-                                razaoSocialInput.value = data.razao_social;
-                                // Nota: Prospects não têm campo de endereço no form padrão, 
-                                // então ignoramos o endereço retornado pela API.
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Erro:', error);
-                            // Em caso de erro silencioso ou de rede, limpa o campo
-                            if (razaoSocialInput.value === "Buscando...") {
-                                razaoSocialInput.value = "";
-                            }
-                        })
-                        .finally(() => {
-                            razaoSocialInput.disabled = false;
-                        });
-                }
-            });
-        }
-    })();
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('CNPJ não encontrado.');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                            razaoSocialInput.value = "";
+                        } else {
+                            razaoSocialInput.value = data.razao_social;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        if (razaoSocialInput.value === "Buscando...") {
+                            razaoSocialInput.value = "";
+                        }
+                    })
+                    .finally(() => {
+                        razaoSocialInput.disabled = false;
+                    });
+            }
+        });
+    }
+    
+    // Submissão do form
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Mostra loading
+        spinner.classList.remove('d-none');
+        btnSalvar.disabled = true;
+        errorsDiv.classList.add('d-none');
+        
+        const formData = new FormData(form);
+        
+        fetch('{% url "app:salvar-cliente-prospeccao" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text();
+            } else {
+                return response.text().then(html => {
+                    throw { type: 'validation', html: html };
+                });
+            }
+        })
+        .then(html => {
+            // Sucesso - Atualiza o select no modal principal
+            const clienteContainer = document.getElementById('cliente-select-container');
+            if (clienteContainer) {
+                clienteContainer.innerHTML = html;
+            }
+            
+            // Fecha o modal secundário
+            const secondaryModal = bootstrap.Modal.getInstance(document.getElementById('secondary-modal'));
+            if (secondaryModal) {
+                secondaryModal.hide();
+            }
+        })
+        .catch(error => {
+            if (error.type === 'validation') {
+                document.getElementById('secondary-modal-content').innerHTML = error.html;
+            } else {
+                console.error('Erro:', error);
+                errorsDiv.textContent = 'Erro ao salvar. Tente novamente.';
+                errorsDiv.classList.remove('d-none');
+            }
+        })
+        .finally(() => {
+            spinner.classList.add('d-none');
+            btnSalvar.disabled = false;
+        });
+    });
+})();
 </script>

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Agenda de Tarefas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <h1>Agenda de Tarefas</h1>
+    <div class="d-flex align-items-center">
+        {% if user.is_staff %}
+        <form method="get" id="agenda-filter-form" class="me-2">
+            <select name="representante_filtro" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="todos" {% if filtro_selecionado == 'todos' %}selected{% endif %}>Todas as Agendas</option>
+                <option value="minhas" {% if filtro_selecionado == 'minhas' %}selected{% endif %}>Minha Agenda</option>
+                <optgroup label="Representantes">
+                    {% for rep in representantes %}
+                    <option value="{{ rep.id }}" {% if filtro_selecionado == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.username }}</option>
+                    {% endfor %}
+                </optgroup>
+            </select>
+        </form>
+        {% endif %}
+        <button class="btn btn-primary" hx-get="{% url 'app:criar-tarefa' %}" hx-target="#modal-content-container" data-bs-toggle="modal" data-bs-target="#detalheTarefaModal">
+            + Nova Tarefa
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <span>Tarefas não Iniciadas ({{ nao_iniciadas.count }})</span>
+                <a href="?representante_filtro={{ filtro_selecionado }}&sort_ni={{ sort_ni_next }}&sort_i={{ sort_i_current }}&sort_f={{ sort_f_current }}" class="text-white">
+                    <i class="bi {% if sort_ni_current == 'desc' %}bi-arrow-down-short{% else %}bi-arrow-up-short{% endif %}"></i>
+                </a>
+            </div>
+            <div class="list-group list-group-flush" id="nao-iniciadas-list">
+                {% for tarefa in nao_iniciadas %}
+                    {% include 'app/partials/_tarefa_card.html' %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <span>Tarefas Iniciadas ({{ iniciadas.count }})</span>
+                <a href="?representante_filtro={{ filtro_selecionado }}&sort_ni={{ sort_ni_current }}&sort_i={{ sort_i_next }}&sort_f={{ sort_f_current }}" class="text-dark">
+                    <i class="bi {% if sort_i_current == 'desc' %}bi-arrow-down-short{% else %}bi-arrow-up-short{% endif %}"></i>
+                </a>
+            </div>
+            <div class="list-group list-group-flush" id="iniciadas-list">
+                {% for tarefa in iniciadas %}
+                    {% include 'app/partials/_tarefa_card.html' %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <span>Tarefas Finalizadas</span>
+                <a href="?representante_filtro={{ filtro_selecionado }}&sort_ni={{ sort_ni_current }}&sort_i={{ sort_i_current }}&sort_f={{ sort_f_next }}" class="text-white">
+                    <i class="bi {% if sort_f_current == 'desc' %}bi-arrow-down-short{% else %}bi-arrow-up-short{% endif %}"></i>
+                </a>
+            </div>
+            <div class="list-group list-group-flush" id="finalizadas-list">
+                {% for tarefa in finalizadas %}
+                    {% include 'app/partials/_tarefa_card.html' %}
+                {% endfor %}
+                {% if tem_mais_finalizadas %}
+                <div class="p-2 text-center" id="carregar-mais-wrapper">
+                    <button class="btn btn-outline-secondary btn-sm"
+                            hx-get="{% url 'app:carregar-mais-tarefas' %}?page={{ proxima_pagina }}&representante_filtro={{ filtro_selecionado }}&sort_f={{ sort_f_current }}"
+                            hx-target="#carregar-mais-wrapper"
+                            hx-swap="outerHTML">
+                        Carregar +10
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detalheTarefaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content-container"></div>
+    </div>
+</div>
+{% endblock %}

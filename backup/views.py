@@ -1,4 +1,4 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy, reverse
@@ -782,25 +782,10 @@ class ServicoUpdateView(LoginRequiredMixin, GestaoRequiredMixin, UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
-class ServicoDeleteView(DeleteView):
+class ServicoDeleteView(LoginRequiredMixin, GestaoRequiredMixin, DeleteView):
     model = Servico
     template_name = 'app/servico_confirm_delete.html'
     success_url = reverse_lazy('app:servico-list')
-
-    def form_valid(self, form):
-        # Executa a exclusão padrão
-        self.object.delete()
-        
-        # Se for uma requisição HTMX, não redireciona. 
-        # Retorna um cabeçalho para o navegador recarregar a página ou atualizar a lista.
-        if self.request.htmx:
-            # Opção A: Força um reload da página inteira via HTMX
-            response = HttpResponse()
-            response['HX-Refresh'] = "true"
-            return response
-            
-        # Se não for HTMX, segue o comportamento normal
-        return HttpResponseRedirect(self.get_success_url())
 
 @login_required
 def servico_historico_modal(request, pk, mes, ano):
@@ -890,47 +875,23 @@ class MetaDeleteView(LoginRequiredMixin, GestaoRequiredMixin, DeleteView):
 @login_required
 def agenda_view(request):
     """ Exibe o Kanban de Tarefas """
-    
-    # Filtros (mesma estrutura de Prospeccao)
-    data_ini = request.GET.get('data_inicial')
-    data_fim = request.GET.get('data_final')
     filtro_rep = request.GET.get('representante_filtro', 'todos')
     
-    tarefas = Tarefa.objects.all().select_related('criado_por', 'iniciado_por', 'finalizado_por')
+    tarefas = Tarefa.objects.all()
 
-    # Representante Comercial so ve as proprias tarefas
-    # Demais cargos (Comercial, Diretoria, Admin, Staff) veem todas com filtro
-    if request.user.profile.is_representante:
-        tarefas = tarefas.filter(
-            Q(criado_por=request.user) | 
-            Q(iniciado_por=request.user) | 
-            Q(finalizado_por=request.user)
-        )
-    else:
-        # Todos que nao sao representantes podem filtrar
+    # Se for staff, pode filtrar. Se for rep, vê as suas e as que criou.
+    if request.user.is_staff:
         if filtro_rep == 'minhas':
-            tarefas = tarefas.filter(
-                Q(criado_por=request.user) | 
-                Q(iniciado_por=request.user) | 
-                Q(finalizado_por=request.user)
-            )
-        elif filtro_rep and filtro_rep != 'todos':
-            tarefas = tarefas.filter(
-                Q(criado_por_id=filtro_rep) | 
-                Q(iniciado_por_id=filtro_rep) | 
-                Q(finalizado_por_id=filtro_rep)
-            )
-    
-    # Filtros de data (por data de criacao)
-    if data_ini:
-        tarefas = tarefas.filter(data_criacao__date__gte=data_ini)
-    if data_fim:
-        tarefas = tarefas.filter(data_criacao__date__lte=data_fim)
+            tarefas = tarefas.filter(Q(criado_por=request.user) | Q(iniciado_por=request.user) | Q(finalizado_por=request.user))
+        elif filtro_rep != 'todos':
+            tarefas = tarefas.filter(Q(criado_por_id=filtro_rep) | Q(iniciado_por_id=filtro_rep) | Q(finalizado_por_id=filtro_rep))
+    else:
+        tarefas = tarefas.filter(Q(criado_por=request.user) | Q(iniciado_por=request.user) | Q(finalizado_por=request.user))
 
-    # Paginacao das finalizadas
+    # Paginação das finalizadas
     finalizadas_qs = tarefas.filter(status='FINALIZADA').order_by('-data_finalizacao')
     page_num = request.GET.get('page', 1)
-    # Paginacao simples (fatia)
+    # Paginação simples (fatia)
     ITEMS_PER_PAGE = 10
     start = 0
     end = int(page_num) * ITEMS_PER_PAGE
@@ -948,44 +909,21 @@ def agenda_view(request):
     }
     return render(request, 'app/agenda.html', context)
 
-
 @login_required
 def carregar_mais_tarefas(request):
-    """ Endpoint HTMX para paginacao infinita de tarefas finalizadas """
+    """ Endpoint HTMX para paginação infinita de tarefas finalizadas """
     filtro_rep = request.GET.get('representante_filtro', 'todos')
-    data_ini = request.GET.get('data_inicial')
-    data_fim = request.GET.get('data_final')
     page_num = int(request.GET.get('page', 2))
     
     tarefas = Tarefa.objects.filter(status='FINALIZADA')
     
-    # Representante Comercial so ve as proprias tarefas
-    if request.user.profile.is_representante:
-        tarefas = tarefas.filter(
-            Q(criado_por=request.user) | 
-            Q(iniciado_por=request.user) | 
-            Q(finalizado_por=request.user)
-        )
-    else:
-        # Demais cargos podem filtrar
+    if request.user.is_staff:
         if filtro_rep == 'minhas':
-            tarefas = tarefas.filter(
-                Q(criado_por=request.user) | 
-                Q(iniciado_por=request.user) | 
-                Q(finalizado_por=request.user)
-            )
-        elif filtro_rep and filtro_rep != 'todos':
-            tarefas = tarefas.filter(
-                Q(criado_por_id=filtro_rep) | 
-                Q(iniciado_por_id=filtro_rep) | 
-                Q(finalizado_por_id=filtro_rep)
-            )
-    
-    # Filtros de data
-    if data_ini:
-        tarefas = tarefas.filter(data_criacao__date__gte=data_ini)
-    if data_fim:
-        tarefas = tarefas.filter(data_criacao__date__lte=data_fim)
+            tarefas = tarefas.filter(Q(criado_por=request.user) | Q(iniciado_por=request.user) | Q(finalizado_por=request.user))
+        elif filtro_rep != 'todos':
+            tarefas = tarefas.filter(Q(criado_por_id=filtro_rep) | Q(iniciado_por_id=filtro_rep) | Q(finalizado_por_id=filtro_rep))
+    else:
+        tarefas = tarefas.filter(Q(criado_por=request.user) | Q(iniciado_por=request.user) | Q(finalizado_por=request.user))
 
     tarefas = tarefas.order_by('-data_finalizacao')
     
@@ -1003,7 +941,6 @@ def carregar_mais_tarefas(request):
         'filtro_selecionado': filtro_rep
     }
     return render(request, 'app/partials/_tarefas_finalizadas_paginadas.html', context)
-
 
 @login_required
 def detalhe_tarefa(request, pk):

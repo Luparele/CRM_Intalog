@@ -27,8 +27,8 @@
                     <td class="text-center">{{ servico.quantidade }}</td>
                     <td class="text-end">R$ {{ servico.valor|floatformat:2|intcomma }}</td>
                     <td class="text-center">
-                        {# BOTÃO EDITAR (Lápis) - Diretoria Comercial, Admin e Staff #}
-                        {% if user.profile.is_comercial or user.profile.is_admin_sistema or user.is_staff %}
+                        {# BOTÃO EDITAR (Lápis) #}
+                        {% if user.profile.is_financeiro or user.is_staff %}
                         <button class="btn btn-sm btn-outline-primary border-0"
                                 hx-get="{% url 'app:servico-update-modal' servico.id %}"
                                 hx-target="#main-modal-content"
@@ -36,7 +36,7 @@
                             <i class="bi bi-pencil"></i>
                         </button>
 
-                        {# BOTÃO EXCLUIR (Lixeira) #}
+                        {# --- CORREÇÃO AQUI: Usando hx-vals para enviar o token como dado de formulário --- #}
                         <button class="btn btn-sm btn-outline-danger border-0 ms-1"
                                 hx-post="{% url 'app:servico-delete' servico.id %}"
                                 hx-confirm="Tem certeza absoluta que deseja excluir este lançamento de R$ {{ servico.valor }}?"

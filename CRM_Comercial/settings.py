@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = '5f=cb11jx+s0c2&!&mua57y%s830w#m%gle11ibs-@($s)1938'
 DEBUG = True
-ALLOWED_HOSTS = ['CRMTransbirday.pythonanywhere.com', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = ['CRMintalog.pythonanywhere.com', '127.0.0.1', 'testserver']
 
 INSTALLED_APPS = [
     'django.contrib.admin',

@@ -1,0 +1,71 @@
+/* app/static/app/css/print.css */
+
+@media print {
+
+    /* Esconde elementos que não devem aparecer na impressão */
+    nav.navbar,
+    footer,
+    .btn, /* Esconde todos os botões */
+    form { /* Esconde os formulários de filtro */
+        display: none !important;
+    }
+
+    /* Configurações gerais do corpo da página para impressão */
+    body {
+        background-color: #fff;
+        font-size: 10pt;
+        zoom: 60%; /* --- ADICIONADO: Reduz o tamanho de tudo em 20% --- */
+    }
+
+    /* Ajusta o container principal para ocupar toda a largura da página */
+    main.container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Força uma quebra de página antes de cada um dos blocos principais, exceto o primeiro */
+    #bloco-trimestral,
+    #bloco-anual,
+    #bloco-top-clientes {
+        page-break-before: always;
+        padding-top: 1.5cm; /* Adiciona uma margem no topo de cada nova página */
+    }
+
+    /* Esconde as linhas horizontais (hr) na impressão, pois as páginas já separam o conteúdo */
+    #bloco-trimestral > hr,
+    #bloco-anual > hr,
+    #bloco-top-clientes > hr {
+        display: none !important;
+    }
+
+    /* Remove sombras e bordas desnecessárias dos cards */
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+    }
+
+    /* Força o texto a ser preto e os fundos a serem brancos para economizar tinta */
+    * {
+        color: #000 !important;
+        background-color: #fff !important;
+    }
+
+    /* Garante que os títulos mantenham um bom destaque */
+    h1, h2, h3, h4, h5, h6 {
+        color: #000 !important;
+        padding-top: 1rem;
+    }
+    
+    /* Garante que os gráficos não encolham e usem a largura total disponível */
+    canvas {
+        max-width: 100% !important;
+    }
+
+    /* Remove a cor de fundo das badges e adiciona uma borda */
+    .badge {
+        border: 1px solid #000;
+    }
+}

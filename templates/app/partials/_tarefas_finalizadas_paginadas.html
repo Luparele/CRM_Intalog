@@ -1,0 +1,14 @@
+{% for tarefa in finalizadas_paginadas %}
+    {% include 'app/partials/_tarefa_card.html' %}
+{% endfor %}
+
+{% if tem_mais_finalizadas %}
+<div class="p-2 text-center" id="carregar-mais-wrapper">
+    <button class="btn btn-outline-secondary btn-sm"
+            hx-get="{% url 'app:carregar-mais-tarefas' %}?page={{ proxima_pagina }}&representante_filtro={{ filtro_selecionado }}&data_inicial={{ request.GET.data_inicial }}&data_final={{ request.GET.data_final }}"
+            hx-target="#carregar-mais-wrapper"
+            hx-swap="outerHTML">
+        Carregar +10
+    </button>
+</div>
+{% endif %}

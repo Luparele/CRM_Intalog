@@ -1,0 +1,63 @@
+﻿{% load humanize %}
+
+<div class="modal-header">
+    <h5 class="modal-title">Historico: {{ cliente.razao_social }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body">
+    <h6 class="text-muted mb-3">Periodo: {{ nome_mes }}/{{ ano }}</h6>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo de Servico</th>
+                    <th class="text-center">Qtd</th>
+                    <th class="text-end">Valor (R$)</th>
+                    <th class="text-center" style="width: 100px;">Acoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for servico in servicos %}
+                <tr>
+                    <td>{{ servico.data_servico|date:"d/m/Y" }}</td>
+                    <td>{{ servico.tipo_servico.nome|default:"-" }}</td>
+                    <td class="text-center">{{ servico.quantidade }}</td>
+                    <td class="text-end">R$ {{ servico.valor|floatformat:2|intcomma }}</td>
+                    <td class="text-center">
+                        {# BOTAO EDITAR (Lapis) #}
+                        {% if user.is_staff or user.profile.tem_acesso_gestao %}
+                        <button class="btn btn-sm btn-outline-primary border-0"
+                                hx-get="{% url 'app:servico-update' servico.id %}"
+                                hx-target="#main-modal-content"
+                                title="Editar Lancamento">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-danger border-0 ms-1"
+                                hx-post="{% url 'app:servico-delete' servico.id %}"
+                                hx-confirm="Tem certeza absoluta que deseja excluir este lancamento de R$ {{ servico.valor }}?"
+                                hx-vals='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'
+                                title="Excluir Lancamento">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">
+                        Nenhum servico registrado neste periodo.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+</div>

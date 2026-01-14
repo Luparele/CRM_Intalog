@@ -1,0 +1,135 @@
+{% load static %}{% load django_bootstrap5 %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CRM - INTALOG{% endblock %}</title>
+    
+    {# PWA Meta Tags #}
+    <meta name="description" content="Sistema de Gestão Comercial e Transportes - Intalog Logística">
+    <meta name="theme-color" content="#212529">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="CRM Intalog">
+    
+    {# Favicon e Ícones #}
+    <link rel="icon" type="image/x-icon" href="{% static 'icons/favicon.ico' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    
+    {% bootstrap_css %}
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <link href="{% static 'app/css/print.css' %}" rel="stylesheet" media="print">
+
+    <style>
+        /* Remove margens e garante altura total */
+        html, body {
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden;
+        }
+
+        /* CRITICAL: Remove qualquer espaco antes da navbar */
+        body {
+            padding-top: 0 !important;
+        }
+        
+        body > nav:first-child,
+        body > *:first-child {
+            margin-top: 0 !important;
+        }
+
+        /* Garante que a navbar cole no topo absoluto */
+        .navbar {
+            margin: 0 !important;
+            top: 0 !important;
+            position: relative;
+        }
+        
+        /* Remove margem do container principal para ele nao empurrar nada */
+        main.container {
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column">
+
+    {# A Navbar deve ser o primeiro elemento visual #}
+    {% include 'app/partials/_navbar.html' %}
+
+    <main class="container flex-grow-1">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="mt-auto py-3 bg-light text-center">
+        <div class="container">
+            <span class="text-muted">
+                <a href="{% url 'app:direitos' %}" class="text-muted text-decoration-none">Intalog Logística</a> &copy; {% now "Y" %}
+            </span>
+        </div>
+    </footer>
+    
+    <div class="modal fade" id="main-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" id="main-modal-content"></div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="secondary-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" id="secondary-modal-content"></div>
+        </div>
+    </div>
+
+    {% bootstrap_javascript %}
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    {# PWA Service Worker Registration #}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registrado com sucesso:', registration.scope);
+                        
+                        // Verificar atualizações
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('Nova versão disponível! Recarregue a página.');
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.log('Falha ao registrar Service Worker:', error);
+                    });
+            });
+        }
+        
+        // Detectar instalação PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('PWA pode ser instalada!');
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA instalada com sucesso!');
+            deferredPrompt = null;
+        });
+    </script>
+
+    {% block javascript %}{% endblock %}
+</body>
+</html>

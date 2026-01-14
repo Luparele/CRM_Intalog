@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load humanize %}
+
+{% block title %}Detalhes do Cliente{% endblock %}
+
+{% block content %}
+    <h1>{{ cliente.razao_social }}</h1>
+    <p class="lead">{{ cliente.cnpj }}</p>
+    <hr>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Informações de Contato</h3>
+            <p><strong>Contato Principal:</strong> {{ cliente.nome_contato }}</p>
+            <p><strong>Telefone:</strong> {{ cliente.telefone_contato }}</p>
+            <p><strong>Endereço:</strong> {{ cliente.endereco }}</p>
+        </div>
+        <div class="col-md-6">
+            <h3>Informações Adicionais</h3>
+            <p><strong>Cadastrado por:</strong> {{ cliente.cadastrado_por.username }}</p>
+            <p><strong>Data de Cadastro:</strong> {{ cliente.data_cadastro|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+    <hr>
+    
+    <h3>Histórico de Serviços</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Tipo de Serviço</th>
+                <th>Data</th>
+                <th>Valor</th>
+                <th>Fechado Por</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for servico in cliente.servicos.all %}
+            <tr>
+                <td>{{ servico.tipo_servico }}</td>
+                <td>{{ servico.data_servico|date:"d/m/Y" }}</td>
+                <td>R$ {{ servico.valor }}</td>
+                <td>{{ servico.fechado_por.username }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">Nenhum serviço registrado para este cliente.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'app:cliente-list' %}" class="btn btn-secondary mt-3">Voltar para a Lista</a>
+{% endblock %}

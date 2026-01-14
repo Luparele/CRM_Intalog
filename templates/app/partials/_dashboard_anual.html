@@ -1,0 +1,184 @@
+{% load humanize %}
+
+<div id="bloco-anual">
+    <hr class="mt-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <h4 class="mb-3">Visão Anual</h4>
+        <div class="row g-2 align-items-center">
+            <div class="col-auto">
+                <select name="ano_anual" class="form-select form-select-sm">
+                    {% for ano in anos_disponiveis %}
+                        <option value="{{ ano }}" {% if ano == ano_anual_selecionado %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-success btn-sm"
+                        hx-get="{% url 'app:get-dash-anual' %}"
+                        hx-target="#bloco-anual"
+                        hx-swap="outerHTML"
+                        hx-include="closest #bloco-anual">
+                    Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Faturamento em {{ ano_anual_selecionado|stringformat:"d" }}</h5>
+                    <p class="card-text fs-4">R$ {{ anual_faturamento|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Histórico de Metas Mensais
+        </div>
+        <div class="card-body">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Mês/Ano</th>
+                        <th class="text-end">Faturamento</th>
+                        <th class="text-end">Meta</th>
+                        <th class="text-center">Desempenho</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mes in historico_metas_anual %}
+                    <tr>
+                        <td>{{ mes.mes_ano }}</td>
+                        <td class="text-end">R$ {{ mes.faturamento|floatformat:2|intcomma }}</td>
+                        <td class="text-end">R$ {{ mes.meta|floatformat:2|intcomma|default:"-" }}</td>
+                        <td class="text-center">
+                            {% if mes.status == "Atingida" %}
+                                <span class="badge bg-success">Atingida</span>
+                            {% elif mes.status == "Não Atingida" %}
+                                <span class="badge bg-danger">Não Atingida</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Sem Meta</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header">Faturamento por Tipo de Serviço (Anual)</div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 300px;">
+                    <canvas id="anualPizzaChart"></canvas>
+                    <p id="no-anual-pizza-data" class="text-center text-muted" style="display: none;">Não há dados para exibir.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header">Faturamento Mensal (Anual)</div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 300px;">
+                    <canvas id="anualFaturamentoBarChart"></canvas>
+                    <p id="no-anual-faturamento-data" class="text-center text-muted" style="display: none;">Não há dados para exibir.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header">Novos Clientes por Mês (Anual)</div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 300px;">
+                    <canvas id="anualClientesBarChart"></canvas>
+                    <p id="no-anual-clientes-data" class="text-center text-muted" style="display: none;">Não há dados para exibir.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ anual_pizza_labels|json_script:"anual-pizza-labels" }}
+{{ anual_pizza_data|json_script:"anual-pizza-data" }}
+{{ anual_bar_labels|json_script:"anual-bar-labels" }}
+{{ anual_faturamento_data|json_script:"anual-faturamento-data" }}
+{{ anual_clientes_data|json_script:"anual-clientes-data" }}
+
+<script>
+    (function() {
+        const anualPizzaLabels = JSON.parse(document.getElementById('anual-pizza-labels').textContent);
+        const anualPizzaData = JSON.parse(document.getElementById('anual-pizza-data').textContent);
+        const anualBarLabels = JSON.parse(document.getElementById('anual-bar-labels').textContent);
+        const anualFaturamentoData = JSON.parse(document.getElementById('anual-faturamento-data').textContent);
+        const anualClientesData = JSON.parse(document.getElementById('anual-clientes-data').textContent);
+
+        // Gráfico de Pizza Anual
+        const anualPizzaCtx = document.getElementById('anualPizzaChart');
+        const noAnualPizzaData = document.getElementById('no-anual-pizza-data');
+        if (anualPizzaCtx) {
+            if (window.anualPizzaChartInstance) { window.anualPizzaChartInstance.destroy(); }
+            if (anualPizzaData.length > 0 && anualPizzaData.some(v => v > 0)) {
+                anualPizzaCtx.style.display = 'block';
+                if(noAnualPizzaData) noAnualPizzaData.style.display = 'none';
+                window.anualPizzaChartInstance = new Chart(anualPizzaCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: anualPizzaLabels,
+                        datasets: [{ data: anualPizzaData, backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#dc3545', '#6c757d'], hoverOffset: 4 }]
+                    }
+                });
+            } else {
+                anualPizzaCtx.style.display = 'none';
+                if(noAnualPizzaData) noAnualPizzaData.style.display = 'block';
+            }
+        }
+
+        // Gráfico de Faturamento Anual
+        const anualFaturamentoBarCtx = document.getElementById('anualFaturamentoBarChart');
+        const noAnualFaturamentoData = document.getElementById('no-anual-faturamento-data');
+        if (anualFaturamentoBarCtx) {
+            if (window.anualFaturamentoChartInstance) { window.anualFaturamentoChartInstance.destroy(); }
+            if (anualFaturamentoData.some(v => v > 0)) {
+                anualFaturamentoBarCtx.style.display = 'block';
+                if(noAnualFaturamentoData) noAnualFaturamentoData.style.display = 'none';
+                window.anualFaturamentoChartInstance = new Chart(anualFaturamentoBarCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: anualBarLabels,
+                        datasets: [{ label: 'Faturamento', data: anualFaturamentoData, backgroundColor: 'rgba(25, 135, 84, 0.6)' }]
+                    },
+                    options: { scales: { y: { beginAtZero: true } } }
+                });
+            } else {
+                anualFaturamentoBarCtx.style.display = 'none';
+                if(noAnualFaturamentoData) noAnualFaturamentoData.style.display = 'block';
+            }
+        }
+
+        // Gráfico de Clientes Anual
+        const anualClientesBarCtx = document.getElementById('anualClientesBarChart');
+        const noAnualClientesData = document.getElementById('no-anual-clientes-data');
+        if (anualClientesBarCtx) {
+            if (window.anualClientesChartInstance) { window.anualClientesChartInstance.destroy(); }
+            if (anualClientesData.some(v => v > 0)) {
+                anualClientesBarCtx.style.display = 'block';
+                if(noAnualClientesData) noAnualClientesData.style.display = 'none';
+                window.anualClientesChartInstance = new Chart(anualClientesBarCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: anualBarLabels,
+                        datasets: [{ label: 'Novos Clientes', data: anualClientesData, backgroundColor: 'rgba(13, 110, 253, 0.6)' }]
+                    },
+                    options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                });
+            } else {
+                anualClientesBarCtx.style.display = 'none';
+                if(noAnualClientesData) noAnualClientesData.style.display = 'block';
+            }
+        }
+    })();
+</script>

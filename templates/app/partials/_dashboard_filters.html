@@ -1,0 +1,69 @@
+{% load humanize %}
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body bg-light">
+        <form id="filter-form" class="row g-3 align-items-end">
+            
+            {# Bloco 1: Filtros Mensais #}
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-primary mb-1">Período Mensal</label>
+                <div class="input-group input-group-sm">
+                    <select name="mes_mensal" class="form-select">
+                        {% for m_num, m_nome in meses_disponiveis %}
+                            <option value="{{ m_num }}" {% if m_num == mes_mensal_selecionado %}selected{% endif %}>
+                                {{ m_nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <select name="ano_mensal" class="form-select">
+                        {% for ano in anos_disponiveis %}
+                            <option value="{{ ano }}" {% if ano == ano_mensal_selecionado %}selected{% endif %}>
+                                {{ ano|stringformat:"d" }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            {# Bloco 2: Filtros Trimestrais #}
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-success mb-1">Período Trimestral</label>
+                <div class="input-group input-group-sm">
+                    <select name="trimestre_trimestral" class="form-select">
+                        {% for t_num, t_nome in trimestres_disponiveis %}
+                            <option value="{{ t_num }}" {% if t_num == trimestre_trimestral_selecionado %}selected{% endif %}>
+                                {{ t_nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <select name="ano_trimestral" class="form-select">
+                        {% for ano in anos_disponiveis %}
+                            <option value="{{ ano }}" {% if ano == ano_trimestral_selecionado %}selected{% endif %}>
+                                {{ ano|stringformat:"d" }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            {# Bloco 3: Filtro Anual #}
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-warning mb-1">Período Anual</label>
+                <select name="ano_anual" class="form-select form-select-sm">
+                    {% for ano in anos_disponiveis %}
+                        <option value="{{ ano }}" {% if ano == ano_anual_selecionado %}selected{% endif %}>
+                            {{ ano|stringformat:"d" }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4 text-end">
+                <small class="text-muted fst-italic">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Alterar os filtros atualiza os gráficos automaticamente.
+                </small>
+            </div>
+        </form>
+    </div>
+</div>

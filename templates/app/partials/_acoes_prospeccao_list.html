@@ -1,0 +1,19 @@
+﻿<h6>Acoes Registradas:</h6>
+<ul class="list-unstyled">
+    {% for acao in prospeccao.acoes.all %}
+    <li class="mb-2">
+        <p class="mb-0">
+            "{{ acao.descricao }}"
+            {# --- Link do Arquivo --- #}
+            {% if acao.arquivo %}
+                <a href="{{ acao.arquivo.url }}" target="_blank" class="ms-2 text-decoration-none" title="Visualizar Anexo">
+                    <i class="bi bi-paperclip"></i> Ver anexo
+                </a>
+            {% endif %}
+        </p>
+        <small class="text-muted">- por {{ acao.registrado_por.username }} em {{ acao.data_hora|date:"d/m/Y" }} as {{ acao.data_hora|time:"H:i" }}</small>
+    </li>
+    {% empty %}
+    <p class="text-muted">Nenhuma acao registrada ainda.</p>
+    {% endfor %}
+</ul>

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% if object %}Editar Meta{% else %}Definir Nova Meta{% endif %}{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h1>{% if object %}Editar Meta{% else %}Definir Nova Meta{% endif %}</h1>
+    <hr>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        {# Campo Cliente #}
+        {% bootstrap_field form.cliente %}
+        
+        <div class="row">
+            <div class="col-md-6">{% bootstrap_field form.mes %}</div>
+            <div class="col-md-6">{% bootstrap_field form.ano %}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">{% bootstrap_field form.dias_uteis %}</div>
+            <div class="col-md-6">{% bootstrap_field form.valor %}</div>
+        </div>
+
+        <button type="submit" class="btn btn-success mt-3">Salvar</button>
+        <a href="{% url 'app:meta-list' %}" class="btn btn-secondary mt-3">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

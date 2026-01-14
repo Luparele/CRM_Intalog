@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Agenda de Tarefas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <h1>Agenda de Tarefas</h1>
+    <button class="btn btn-primary" hx-get="{% url 'app:criar-tarefa' %}" hx-target="#modal-content-container" data-bs-toggle="modal" data-bs-target="#detalheTarefaModal">
+        + Nova Tarefa
+    </button>
+</div>
+
+{% if not user.profile.is_representante %}
+<div class="card mb-4">
+    <div class="card-header">Filtros da Lista</div>
+    <div class="card-body">
+        <form method="get" id="agenda-filter-form">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="id_data_inicial" class="form-label">Data Inicial</label>
+                    <input type="date" class="form-control form-control-sm" name="data_inicial" id="id_data_inicial" value="{{ request.GET.data_inicial }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="id_data_final" class="form-label">Data Final</label>
+                    <input type="date" class="form-control form-control-sm" name="data_final" id="id_data_final" value="{{ request.GET.data_final }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="id_representante" class="form-label">Usuário</label>
+                    <select name="representante_filtro" id="id_representante" class="form-select form-select-sm">
+                        <option value="todos" {% if filtro_selecionado == 'todos' %}selected{% endif %}>Todas as Agendas</option>
+                        <option value="minhas" {% if filtro_selecionado == 'minhas' %}selected{% endif %}>Minha Agenda</option>
+                        <optgroup label="Equipe">
+                            {% for rep in representantes %}
+                                <option value="{{ rep.id }}" {% if filtro_selecionado == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.get_full_name|default:rep.username }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <span>Tarefas não Iniciadas ({{ nao_iniciadas.count }})</span>
+            </div>
+            <div class="list-group list-group-flush" id="nao-iniciadas-list">
+                {% for tarefa in nao_iniciadas %}
+                    {% include 'app/partials/_tarefa_card.html' %}
+                {% empty %}
+                    <div class="list-group-item text-center text-muted">Nenhuma tarefa.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <span>Tarefas Iniciadas ({{ iniciadas.count }})</span>
+            </div>
+            <div class="list-group list-group-flush" id="iniciadas-list">
+                {% for tarefa in iniciadas %}
+                    {% include 'app/partials/_tarefa_card.html' %}
+                {% empty %}
+                    <div class="list-group-item text-center text-muted">Nenhuma tarefa.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <span>Tarefas Finalizadas</span>
+            </div>
+            <div class="list-group list-group-flush" id="finalizadas-list">
+                {% for tarefa in finalizadas %}
+                    {% include 'app/partials/_tarefa_card.html' %}
+                {% empty %}
+                    <div class="list-group-item text-center text-muted">Nenhuma tarefa.</div>
+                {% endfor %}
+                {% if tem_mais_finalizadas %}
+                <div class="p-2 text-center" id="carregar-mais-wrapper">
+                    <button class="btn btn-outline-secondary btn-sm"
+                            hx-get="{% url 'app:carregar-mais-tarefas' %}?page={{ proxima_pagina }}&representante_filtro={{ filtro_selecionado }}&data_inicial={{ request.GET.data_inicial }}&data_final={{ request.GET.data_final }}"
+                            hx-target="#carregar-mais-wrapper"
+                            hx-swap="outerHTML">
+                        Carregar +10
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detalheTarefaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content-container"></div>
+    </div>
+</div>
+{% endblock %}

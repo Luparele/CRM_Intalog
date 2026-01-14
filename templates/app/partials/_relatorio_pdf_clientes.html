@@ -1,0 +1,73 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Clientes</title>
+    <style>
+        @page { size: A4 landscape; margin: 1.5cm; } /* 'landscape' para deitar a página */
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; }
+        h1 { font-size: 18pt; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 5px; margin-bottom: 0; }
+        .header-info { margin-top: 5px; margin-bottom: 20px; font-size: 9pt; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        thead tr { background-color: #0d6efd; color: white; }
+        th { font-weight: bold; }
+        tbody tr:nth-child(even) { background-color: #f2f2f2; }
+        tfoot tr { background-color: #343a40; color: white; font-weight: bold; }
+        #footer_content { text-align: center; font-size: 8pt; color: #999; }
+        @page { @frame footer { -pdf-frame-content: footer_content; bottom: 1cm; margin-left: 1cm; margin-right: 1cm; height: 1cm; } }
+    </style>
+</head>
+<body>
+    <div id="footer_content">
+        Intalog Logística - Gerado em {{ data_geracao|date:"d/m/Y à\s H:i" }}
+    </div>
+
+    <h1>Relatório de Clientes Cadastrados</h1>
+    <div class="header-info">
+        {% if user.is_staff %}
+            <strong>Representante:</strong> {{ representante_selecionado.username|default:"Todos" }}
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Razão Social</th>
+                <th>CNPJ</th>
+                <th>Contato</th>
+                <th>Data Cadastro</th>
+                {% if user.is_staff %}
+                <th>Cadastrado Por</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in resultados %}
+            <tr>
+                <td>{{ cliente.razao_social }}</td>
+                <td>{{ cliente.cnpj }}</td>
+                <td>{{ cliente.nome_contato }}</td>
+                <td>{{ cliente.data_cadastro|date:"d/m/Y" }}</td>
+                {% if user.is_staff %}
+                <td>{{ cliente.cadastrado_por.username }}</td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Nenhum cliente encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if resultados %}
+        <tfoot>
+            <tr>
+                <td colspan="{% if user.is_staff %}4{% else %}3{% endif %}" style="text-align: right;">TOTAL DE CLIENTES:</td>
+                <td>{{ total_clientes }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</body>
+</html>

@@ -1,0 +1,44 @@
+﻿{% load django_bootstrap5 %}
+
+<form hx-post="{% url 'app:servico-update-modal' servico.id %}"
+      hx-on::after-request="if(event.detail.successful && event.detail.xhr.status === 204) location.reload()">
+    {% csrf_token %}
+    
+    <div class="modal-header">
+        <h5 class="modal-title">Editar Servico</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    
+    <div class="modal-body">
+        {% bootstrap_field form.cliente %}
+        
+        <div class="mb-3">
+            <label for="{{ form.tipo_servico.id_for_label }}" class="form-label required">Tipo de Servico</label>
+            {{ form.tipo_servico }}
+            {# Nota: Removemos o botao de adicionar novo tipo aqui para simplificar o modal dentro de modal #}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                {% bootstrap_field form.data_servico %}
+            </div>
+            <div class="col-md-6">
+                {% bootstrap_field form.quantidade %}
+            </div>
+        </div>
+        
+        {% bootstrap_field form.valor %}
+    </div>
+    
+    <div class="modal-footer">
+        {# Botao Voltar: Reabre o historico do cliente #}
+        <button type="button" class="btn btn-secondary me-auto"
+                hx-get="{% url 'app:servico-historico-modal' servico.cliente.id servico.data_servico.month servico.data_servico.year %}"
+                hx-target="#main-modal-content">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </button>
+
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Alteracoes</button>
+    </div>
+</form>

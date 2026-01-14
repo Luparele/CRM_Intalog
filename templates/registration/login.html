@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %} {# CORREÇÃO AQUI #}
+
+{% block title %}Login - CRM Comercial{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title text-center">Acessar Sistema</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {# Renderiza o formulário de login com o estilo do Bootstrap #}
+                    {% bootstrap_form form %}
+                    
+                    <div class="d-grid gap-2">
+                        {% bootstrap_button button_type="submit" content="Entrar" size="lg" %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

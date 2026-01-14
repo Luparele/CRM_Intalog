@@ -1,0 +1,23 @@
+﻿{% load django_bootstrap5 %}
+<form hx-post="{% url 'app:criar-prospeccao' %}"
+      hx-on::after-request="if(event.detail.successful && event.detail.xhr.status === 204) { location.reload(); }">
+    {% csrf_token %}
+    <div class="modal-header">
+        <h5 class="modal-title">Nova Prospeccao</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        {% bootstrap_field form.cliente label="Cliente Prospect" %}
+        <small class="form-text text-muted">Selecione um cliente prospect da lista.</small>
+        
+        {% bootstrap_field form.tipo_servico %}
+        {% bootstrap_field form.duracao_meses %}
+        {% bootstrap_field form.viagens_aproximadas %}
+        {% bootstrap_field form.valor_medio_viagem %}
+        <p class="form-text text-muted mt-2">O "Valor Total" sera calculado automaticamente.</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Criar Prospeccao</button>
+    </div>
+</form>

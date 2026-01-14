@@ -1,0 +1,114 @@
+﻿{% load django_bootstrap5 %}
+
+{# Adicionado hx-target para garantir que, se houver erro, ele substitua o corpo do modal mostrando o erro #}
+<form hx-post="{% url 'app:salvar-promocao-prospect' prospect.pk %}" 
+      hx-target="#main-modal-content"
+      hx-on::after-request="if(event.detail.successful) location.reload()">
+    
+    {% csrf_token %}
+    
+    <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-arrow-up-circle-fill me-2"></i>Promover Prospect a Cliente</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    
+    <div class="modal-body">
+        {# Exibe erros nao vinculados a campos especificos (ex: erros gerais) #}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="alert alert-info small mb-3">
+            <i class="bi bi-info-circle"></i> Complete o endereco e a filial para ativar este cliente.
+        </div>
+
+        {# Renderiza o campo de representante se ele existir no form (Financeiro/Admin) #}
+        {% if form.cadastrado_por %}
+            {% bootstrap_field form.cadastrado_por label="Representante Responsavel (Dono)" %}
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">CNPJ</label>
+            <div class="input-group">
+                {{ form.cnpj }}
+                <button class="btn btn-outline-secondary" type="button" id="btn-consultar-cnpj-modal" title="Consultar dados na Receita">
+                    <i class="bi bi-search"></i> Buscar Endereco
+                </button>
+            </div>
+            {# Exibe erro do CNPJ se houver #}
+            {% if form.cnpj.errors %}
+                <div class="text-danger small">{{ form.cnpj.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        {% bootstrap_field form.razao_social %}
+        {% bootstrap_field form.endereco %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                {% bootstrap_field form.nome_contato %}
+            </div>
+            <div class="col-md-6">
+                {% bootstrap_field form.telefone_contato %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-success">Confirmar Promocao</button>
+    </div>
+</form>
+
+<script>
+    // Script especifico para este modal (ID do botao alterado para nao conflitar com a tela principal)
+    var btnConsulta = document.getElementById('btn-consultar-cnpj-modal');
+    if (btnConsulta) {
+        btnConsulta.addEventListener('click', function() {
+            const cnpjInput = document.getElementById('id_cnpj');
+            const razaoSocialInput = document.getElementById('id_razao_social');
+            const enderecoInput = document.getElementById('id_endereco');
+            
+            const cnpj = cnpjInput.value.replace(/[^\d]/g, '');
+
+            if (cnpj.length === 14) {
+                const url = `/api/consulta-cnpj/${cnpj}/`;
+                
+                // Feedback visual
+                const originalContent = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                this.disabled = true;
+                const btn = this;
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('CNPJ nao encontrado.');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            if(confirm("Dados encontrados!\nRazao Social: " + data.razao_social + "\nEndereco: " + data.endereco + "\n\nDeseja preencher?")) {
+                                razaoSocialInput.value = data.razao_social;
+                                enderecoInput.value = data.endereco;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        alert("Erro: " + error.message);
+                    })
+                    .finally(() => {
+                        btn.innerHTML = originalContent;
+                        btn.disabled = false;
+                    });
+            } else {
+                alert("CNPJ invalido para consulta.");
+            }
+        });
+    }
+</script>

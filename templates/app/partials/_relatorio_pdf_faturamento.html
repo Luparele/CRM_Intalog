@@ -1,0 +1,78 @@
+{% load humanize %} {# <<< ADICIONE ESTA LINHA NO TOPO DO ARQUIVO #}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Faturamento</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+            @frame footer {
+                -pdf-frame-content: footer_content;
+                bottom: 1cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
+            }
+        }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt; color: #333; }
+        h1 { font-size: 20pt; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 5px; margin-bottom: 0; }
+        .header-info { margin-top: 5px; margin-bottom: 30px; font-size: 9pt; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        thead tr { background-color: #0d6efd; color: white; }
+        th { font-weight: bold; }
+        tbody tr:nth-child(even) { background-color: #f2f2f2; }
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+        tfoot tr { background-color: #343a40; color: white; font-weight: bold; }
+        #footer_content { text-align: center; font-size: 8pt; color: #999; }
+    </style>
+</head>
+<body>
+    <div id="footer_content">
+        Intalog Logística - Gerado em {{ data_geracao|date:"d/m/Y à\s H:i" }}
+    </div>
+
+    <h1>Relatório de Faturamento por Cliente</h1>
+    <div class="header-info">
+        <strong>Período:</strong> {{ data_inicial|date:"d/m/Y"|default:"Início" }} a {{ data_final|date:"d/m/Y"|default:"Fim" }} <br>
+        {% if user.is_staff %}
+            <strong>Representante:</strong> {{ representante_selecionado.username|default:"Todos" }}
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Cliente (Razão Social)</th>
+                <th class="text-center">Nº de Serviços</th>
+                <th class="text-end">Faturamento Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in resultados %}
+            <tr>
+                <td>{{ item.cliente__razao_social }}</td>
+                <td class="text-center">{{ item.num_servicos }}</td>
+                <td class="text-end">R$ {{ item.faturamento_total|floatformat:2|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center">Nenhum resultado encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if resultados %}
+        <tfoot>
+            <tr>
+                <td>TOTAL</td>
+                <td class="text-center">{{ total_servicos }}</td>
+                <td class="text-end">R$ {{ total_faturamento|floatformat:2|intcomma }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</body>
+</html>

@@ -1,0 +1,131 @@
+﻿{% load humanize %}
+{% load django_bootstrap5 %}
+
+<div class="modal-header">
+    <h5 class="modal-title">
+        Prospeccao: {{ prospeccao.cliente.razao_social }}
+        {% if prospeccao.numero_controle %}
+            <small class="text-muted ms-2 fs-6">({{ prospeccao.numero_controle }})</small>
+        {% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <div class="row mb-3">
+                <div class="col-md-6"><strong>Tipo de Servico:</strong> {{ prospeccao.tipo_servico.nome }}</div>
+                <div class="col-md-6"><strong>Duracao Estimada:</strong> {{ prospeccao.duracao_meses }} meses</div>
+                <div class="col-md-6"><strong>Viagens Estimadas:</strong> {{ prospeccao.viagens_aproximadas }}</div>
+                <div class="col-md-6"><strong>Valor Medio por Viagem:</strong> R$ {{ prospeccao.valor_medio_viagem|floatformat:2|intcomma }}</div>
+                <div class="col-md-12 mt-2"><strong>Valor Total Estimado:</strong> <span class="fs-5">R$ {{ prospeccao.valor_total|floatformat:2|intcomma }}</span></div>
+            </div>
+        </div>
+        {% if prospeccao.status == 'NOVA' or prospeccao.status == 'NEGOCIANDO' %}
+        <div>
+            <button class="btn btn-sm btn-outline-secondary"
+                    hx-get="{% url 'app:editar-prospeccao' prospeccao.id %}"
+                    hx-target="#main-modal-content">
+                <i class="bi bi-pencil"></i> Editar
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <hr>
+    
+    <h6>Historico do Processo:</h6>
+    <div class="mb-3 small">
+        <p class="mb-1"><strong>Criado por:</strong> {{ prospeccao.criado_por.username }} em {{ prospeccao.data_criacao|date:"d/m/Y H:i" }}</p>
+        
+        {% if prospeccao.iniciado_por %}
+        <p class="mb-1"><strong>Negociacao Iniciada por:</strong> {{ prospeccao.iniciado_por.username }} em {{ prospeccao.data_inicio_negociacao|date:"d/m/Y H:i" }}</p>
+        {% endif %}
+        
+        {% if prospeccao.finalizado_por %}
+        <p class="mb-1"><strong>Finalizado por:</strong> {{ prospeccao.finalizado_por.username }} em {{ prospeccao.data_finalizacao|date:"d/m/Y H:i" }}</p>
+        <p class="mb-1">
+            <strong>Status Final:</strong> 
+            {% if prospeccao.status == 'FECHADO' %}<span class="badge bg-success">Venda Fechada</span>
+            {% elif prospeccao.status == 'DESISTENCIA' %}<span class="badge bg-secondary">Desistencia</span>
+            {% elif prospeccao.status == 'PERDIDA' %}<span class="badge bg-danger">Perdida</span>
+            {% endif %}
+        </p>
+        {% endif %}
+    </div>
+
+    <hr>
+
+    <div id="acoes-prospeccao-container">
+        {% include 'app/partials/_acoes_prospeccao_list.html' %}
+    </div>
+
+    {# Formulario para nova acao (APENAS se estiver EM NEGOCIACAO) #}
+    {% if prospeccao.status == 'NEGOCIANDO' %}
+    <hr>
+    <form hx-post="{% url 'app:gravar-acao-prospeccao' prospeccao.id %}"
+          hx-swap="none"
+          hx-on::after-request="if(event.detail.successful) { 
+              const modal = bootstrap.Modal.getInstance(document.getElementById('main-modal'));
+              if(modal) modal.hide();
+              setTimeout(() => location.reload(), 300);
+          }"
+          enctype="multipart/form-data">
+        {% csrf_token %}
+        {% bootstrap_form acao_form %}
+        <button type="submit" class="btn btn-info text-white">Registrar Acao</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="modal-footer justify-content-between">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+
+    <div>
+        {# Botoes de mudanca de status (Apenas se nao finalizada) #}
+        {% if prospeccao.status == 'NOVA' %}
+        <form class="d-inline" 
+              hx-post="{% url 'app:iniciar-prospeccao' prospeccao.id %}" 
+              hx-confirm="Iniciar a negociacao desta prospeccao?"
+              hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Iniciar Negociacao</button>
+        </form>
+        {% elif prospeccao.status == 'NEGOCIANDO' %}
+        <div class="btn-group dropup">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                Finalizar Prospeccao
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <form hx-post="{% url 'app:finalizar-prospeccao' prospeccao.id %}" 
+                          hx-confirm="Confirmar VENDA FECHADA? Isso gerara um novo servico automaticamente."
+                          hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="FECHADO">
+                        <button type="submit" class="dropdown-item">Servico Fechado</button>
+                    </form>
+                </li>
+                <li>
+                    <form hx-post="{% url 'app:finalizar-prospeccao' prospeccao.id %}" 
+                          hx-confirm="Confirmar finalizacao como 'Desistencia do Cliente'?"
+                          hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="DESISTENCIA">
+                        <button type="submit" class="dropdown-item">Desistencia do Cliente</button>
+                    </form>
+                </li>
+                <li>
+                    <form hx-post="{% url 'app:finalizar-prospeccao' prospeccao.id %}" 
+                          hx-confirm="Confirmar finalizacao como 'Negociacao Perdida'?"
+                          hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="PERDIDA">
+                        <button type="submit" class="dropdown-item">Negociacao Perdida</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Meu Dashboard{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Meu Desempenho</h1>
+        <button id="print-button" class="btn btn-secondary">Imprimir Dashboard</button>
+    </div>
+    {# --- CARD DE ÚLTIMA ATUALIZAÇÃO --- #}
+{% if ultimo_lancamento %}
+<div class="alert alert-info d-flex align-items-center justify-content-between shadow-sm border-0 mb-4" role="alert">
+    <div>
+        <i class="bi bi-clock-history fs-4 me-2"></i>
+        <span class="fw-bold">Último lançamento realizado:</span>
+        <span class="ms-1">{{ ultimo_lancamento.data_registro|date:"d/m/Y \à\s H:i" }}</span>
+        <span class="mx-2">|</span>
+        <span>Responsável: <strong>{{ ultimo_lancamento.fechado_por.get_full_name|default:ultimo_lancamento.fechado_por.username }}</strong></span>
+    </div>
+    <div class="text-end">
+        <small class="text-muted">Cliente: {{ ultimo_lancamento.cliente.razao_social }}</small>
+    </div>
+</div>
+{% endif %}
+    <div id="bloco-mensal" 
+         hx-get="{% url 'app:get-dash-mensal' %}" 
+         hx-trigger="load" 
+         hx-swap="outerHTML">
+        <p class="text-center">Carregando dados mensais...</p>
+    </div>
+    
+    <div id="bloco-trimestral" 
+         hx-get="{% url 'app:get-dash-trimestral' %}" 
+         hx-trigger="load" 
+         hx-swap="outerHTML">
+        <p class="text-center">Carregando dados trimestrais...</p>
+    </div>
+
+    <div id="bloco-anual" 
+         hx-get="{% url 'app:get-dash-anual' %}" 
+         hx-trigger="load" 
+         hx-swap="outerHTML">
+        <p class="text-center">Carregando dados anuais...</p>
+    </div>
+
+    <div id="bloco-top-clientes"
+         hx-get="{% url 'app:get-dash-top-clientes' %}"
+         hx-trigger="load"
+         hx-swap="outerHTML">
+        <p class="text-center">Carregando melhores clientes...</p>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.getElementById('print-button');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+    }
+});
+</script>
+{% endblock %}

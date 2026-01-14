@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% if object %}Editar Serviço{% else %}Registrar Novo Serviço{% endif %}{% endblock %}
+
+{% block content %}
+    <div style="max-width: 600px; margin: 0 auto;">
+
+        <h1>{% if object %}Editar Serviço{% else %}Registrar Novo Serviço{% endif %}</h1>
+        <hr>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            
+            {% bootstrap_field form.cliente %}
+            
+            <div class="mb-3">
+                <label for="{{ form.tipo_servico.id_for_label }}" class="form-label required">Tipo de Serviço</label>
+                <div class="input-group">
+                    {{ form.tipo_servico }}
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#addTipoServicoModal">
+                        +
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    {% bootstrap_field form.data_servico %}
+                </div>
+                <div class="col-md-6">
+                    {% bootstrap_field form.quantidade %}
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_valor" class="form-label">{{ form.valor.label }}</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="id_valor" 
+                       name="valor_display"
+                       placeholder="R$ 0,00">
+                <input type="hidden" name="valor" id="id_valor_hidden">
+            </div>
+
+            <button type="submit" class="btn btn-success">Salvar</button>
+            <a href="{% url 'app:servico-list' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+
+    </div>
+
+    <div class="modal fade" id="addTipoServicoModal" tabindex="-1" aria-labelledby="addTipoServicoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTipoServicoModalLabel">Adicionar Novo Tipo de Serviço</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addTipoServicoForm">
+                        <div class="mb-3">
+                            <label for="new_tipo_servico_nome" class="form-label">Nome do novo serviço:</label>
+                            <input type="text" class="form-control" id="new_tipo_servico_nome" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveNewTipoServico">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ===== FORMATAÇÃO MONETÁRIA MANUAL =====
+    const valorInput = document.getElementById('id_valor');
+    const valorHidden = document.getElementById('id_valor_hidden');
+    
+    if (valorInput) {
+        // Função para formatar valor
+        function formatarValor(valor) {
+            // Remove tudo que não é dígito
+            let numeros = valor.replace(/\D/g, '');
+            
+            // Se vazio, retorna vazio
+            if (!numeros) {
+                return '';
+            }
+            
+            // Garante pelo menos 3 dígitos (0,01)
+            numeros = numeros.padStart(3, '0');
+            
+            // Separa centavos (últimos 2 dígitos)
+            const centavos = numeros.slice(-2);
+            const reais = numeros.slice(0, -2);
+            
+            // Adiciona pontos nos milhares
+            const reaisFormatado = reais.replace(/(\d)(?=(\d{3})+$)/g, '$1.');
+            
+            return 'R$ ' + reaisFormatado + ',' + centavos;
+        }
+        
+        // Evento de input
+        valorInput.addEventListener('input', function(e) {
+            const valorFormatado = formatarValor(e.target.value);
+            e.target.value = valorFormatado;
+            
+            // Atualiza o campo hidden
+            if (valorFormatado) {
+                const valorDecimal = valorFormatado
+                    .replace('R$ ', '')
+                    .replace(/\./g, '')
+                    .replace(',', '.');
+                valorHidden.value = valorDecimal;
+            } else {
+                valorHidden.value = '';
+            }
+        });
+        
+        // Se tem valor inicial (edição), formata
+        {% if form.valor.value %}
+        const valorInicial = '{{ form.valor.value }}';
+        const valorCentavos = Math.round(parseFloat(valorInicial) * 100).toString();
+        valorInput.value = formatarValor(valorCentavos);
+        valorHidden.value = valorInicial;
+        {% endif %}
+    }
+    
+    // ===== MODAL DE TIPO DE SERVIÇO =====
+    const saveButton = document.getElementById('saveNewTipoServico');
+    const modalElement = document.getElementById('addTipoServicoModal');
+    const modal = new bootstrap.Modal(modalElement);
+    const newServiceNameInput = document.getElementById('new_tipo_servico_nome');
+    const tipoServicoSelect = document.getElementById('id_tipo_servico');
+
+    saveButton.addEventListener('click', function() {
+        const newName = newServiceNameInput.value.trim();
+        if (newName === '') { alert('Por favor, insira um nome para o serviço.'); return; }
+        const url = "{% url 'app:add-tipo-servico' %}";
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ nome: newName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id && data.nome) {
+                const newOption = new Option(data.nome, data.id, true, true);
+                tipoServicoSelect.add(newOption);
+                newServiceNameInput.value = '';
+                modal.hide();
+            } else {
+                alert('Erro ao salvar o novo tipo de serviço: ' + data.error);
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+    });
+});
+</script>
+{% endblock %}

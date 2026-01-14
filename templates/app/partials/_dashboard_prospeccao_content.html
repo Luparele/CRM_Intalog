@@ -1,0 +1,191 @@
+{% load django_bootstrap5 %}
+{% load humanize %}
+
+{# --- CONTEÚDO DO DASHBOARD (SEM HEADER/FOOTER) --- #}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4">Análise de Performance</h2>
+    {# Botão para fechar/esconder o dashboard se desejar, opcional #}
+    <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('dashboard-prospeccao-container').innerHTML = ''">
+        <i class="bi bi-x-lg"></i> Fechar
+    </button>
+</div>
+
+{# --- PAINEL DE FILTROS --- #}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light">Filtros Avançados</div>
+    <div class="card-body">
+        <form hx-get="{% url 'app:dashboard-prospeccao' %}" 
+              hx-target="#dashboard-prospeccao-container" 
+              hx-swap="innerHTML">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="data_inicial" class="form-label">Data Inicial (Finalização)</label>
+                    <input type="date" name="data_inicial" class="form-control form-control-sm" value="{{ request.GET.data_inicial }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="data_final" class="form-label">Data Final (Finalização)</label>
+                    <input type="date" name="data_final" class="form-control form-control-sm" value="{{ request.GET.data_final }}">
+                </div>
+                {% if user.is_staff or user.profile.tem_acesso_gestao %}
+                <div class="col-md-4">
+                    <label for="representante_id" class="form-label">Representante</label>
+                    <select name="representante_id" class="form-select form-select-sm">
+                        <option value="todos">Todos</option>
+                        {% for rep in representantes %}
+                            <option value="{{ rep.id }}" {% if request.GET.representante_id == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Aplicar Filtros</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# --- KPIs --- #}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title">Taxa de Conversão</h6>
+                <h2 class="display-6">{{ taxa_conversao|floatformat:1 }}%</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title">Total Fechado</h6>
+                <h2 class="display-6">R$ {{ total_fechado_valor|floatformat:0|intcomma }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title">Ticket Médio</h6>
+                <h2 class="display-6">R$ {{ ticket_medio|floatformat:0|intcomma }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-secondary h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title">Ciclo Médio (Dias)</h6>
+                <h2 class="display-6">{{ tempo_medio_dias }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">Funil de Vendas (Status)</div>
+            <div class="card-body">
+                <canvas id="funilChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    {% if user.is_staff or user.profile.tem_acesso_gestao %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">Performance por Representante (Valor Fechado)</div>
+            <div class="card-body">
+                <canvas id="performanceChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-warning text-dark">Previsão de Faturamento (Recorrência Estimada)</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Mês de Referência</th>
+                        <th class="text-end">Valor Previsto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in previsao_faturamento %}
+                    <tr>
+                        <td>{{ item.mes_ano }}</td>
+                        <td class="text-end fw-bold">R$ {{ item.valor|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2" class="text-center">Sem dados suficientes para previsão.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# --- DADOS PARA OS GRÁFICOS (JSON) --- #}
+{{ funil_labels|json_script:"funil-labels" }}
+{{ funil_counts|json_script:"funil-counts" }}
+
+{% if user.is_staff or user.profile.tem_acesso_gestao %}
+    {{ performance_labels|json_script:"performance-labels" }}
+    {{ performance_valores|json_script:"performance-valores" }}
+{% endif %}
+
+<script>
+    // Como este script é carregado via HTMX, ele executa imediatamente
+    (function() {
+        // 1. Gráfico de Funil
+        const funilCtx = document.getElementById('funilChart');
+        if (funilCtx) {
+            const funilLabels = JSON.parse(document.getElementById('funil-labels').textContent);
+            const funilData = JSON.parse(document.getElementById('funil-counts').textContent);
+
+            new Chart(funilCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: funilLabels,
+                    datasets: [{
+                        data: funilData,
+                        backgroundColor: ['#0dcaf0', '#ffc107', '#198754', '#6c757d', '#dc3545'],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // 2. Gráfico de Performance
+        const perfCtx = document.getElementById('performanceChart');
+        if (perfCtx) {
+            const perfLabelsElem = document.getElementById('performance-labels');
+            if (perfLabelsElem) {
+                const perfLabels = JSON.parse(perfLabelsElem.textContent);
+                const perfData = JSON.parse(document.getElementById('performance-valores').textContent);
+
+                new Chart(perfCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: perfLabels,
+                        datasets: [{
+                            label: 'Total Fechado (R$)',
+                            data: perfData,
+                            backgroundColor: '#0d6efd',
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+    })();
+</script>

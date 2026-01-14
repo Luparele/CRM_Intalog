@@ -1,0 +1,185 @@
+{% load humanize %}
+
+{# --- RELATÓRIO DE FATURAMENTO POR PERÍODO --- #}
+{% if report_type == 'faturamento_periodo' %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Resultados: Faturamento por Período</h5>
+        {% if resultados %}
+        <div>
+            <a href="{% url 'app:exportar-relatorio' %}?{{ request.GET.urlencode }}&format=pdf" class="btn btn-danger btn-sm">
+                Exportar para PDF
+            </a>
+            <a href="{% url 'app:exportar-relatorio' %}?{{ request.GET.urlencode }}&format=xlsx" class="btn btn-success btn-sm ms-2">
+                Exportar para Excel
+            </a>
+        </div>
+        
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Cliente (Razão Social)</th>
+                    <th class="text-center">Nº de Serviços</th>
+                    <th class="text-end">Faturamento Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in resultados %}
+                <tr>
+                    <td>{{ item.cliente__razao_social }}</td>
+                    <td class="text-center">{{ item.num_servicos }}</td>
+                    <td class="text-end">R$ {{ item.faturamento_total|floatformat:2|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">Nenhum serviço encontrado para os filtros selecionados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if resultados %}
+            <tfoot>
+                <tr class="table-dark">
+                    <th scope="row">TOTAL</th>
+                    <th scope="col" class="text-center">{{ total_servicos }}</th>
+                    <th scope="col" class="text-end">R$ {{ total_faturamento|floatformat:2|intcomma }}</th>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+{# --- RELATÓRIO DE CLIENTES CADASTRADOS --- #}
+{% elif report_type == 'clientes_cadastrados' %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Resultados: Clientes Cadastrados</h5>
+        {% if resultados %}
+        <div>
+            <a href="{% url 'app:exportar-relatorio' %}?{{ request.GET.urlencode }}&format=pdf" class="btn btn-danger btn-sm">
+                Exportar para PDF
+            </a>
+            <a href="{% url 'app:exportar-relatorio' %}?{{ request.GET.urlencode }}&format=xlsx" class="btn btn-success btn-sm ms-2">
+                Exportar para Excel
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Razão Social</th>
+                    <th>CNPJ</th>
+                    <th>Contato</th>
+                    <th>Data de Cadastro</th>
+                    {% if user.is_staff %}
+                    <th>Cadastrado Por</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in resultados %}
+                <tr>
+                    <td>{{ cliente.razao_social }}</td>
+                    <td>{{ cliente.cnpj }}</td>
+                    <td>{{ cliente.nome_contato }}</td>
+                    <td>{{ cliente.data_cadastro|date:"d/m/Y" }}</td>
+                    {% if user.is_staff %}
+                    <td>{{ cliente.cadastrado_por.username }}</td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Nenhum cliente encontrado para os filtros selecionados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if resultados %}
+            <tfoot>
+                <tr class="table-dark">
+                    <th colspan="{% if user.is_staff %}4{% else %}3{% endif %}" class="text-end">TOTAL DE CLIENTES:</th>
+                    <th>{{ total_clientes }}</th>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+{# --- RELATÓRIO DE HISTÓRICO POR CLIENTE --- #}
+{% elif report_type == 'historico_cliente' %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        {% if cliente_selecionado %}
+        <h5>Resultados: Histórico de Vendas para {{ cliente_selecionado.razao_social }}</h5>
+        {% if resultados %}
+        <div>
+            <a href="{% url 'app:exportar-relatorio' %}?{{ request.GET.urlencode }}&format=pdf" class="btn btn-danger btn-sm">
+                Exportar para PDF
+            </a>
+            <a href="{% url 'app:exportar-relatorio' %}?{{ request.GET.urlencode }}&format=xlsx" class="btn btn-success btn-sm ms-2">
+                Exportar para Excel
+            </a>
+        </div>
+        {% endif %}
+        {% else %}
+        <h5>Histórico de Vendas por Cliente</h5>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if not request.GET.cliente_id %}
+        <p class="text-center text-info">Por favor, selecione um cliente para gerar o relatório.</p>
+        {% else %}
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Tipo de Serviço</th>
+                    <th>Data</th>
+                    {% if user.is_staff %}
+                    <th>Fechado Por</th>
+                    {% endif %}
+                    <th class="text-end">Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for servico in resultados %}
+                <tr>
+                    <td>{{ servico.tipo_servico }}</td>
+                    <td>{{ servico.data_servico|date:"d/m/Y" }}</td>
+                    {% if user.is_staff %}
+                    <td>{{ servico.fechado_por.username }}</td>
+                    {% endif %}
+                    <td class="text-end">R$ {{ servico.valor|floatformat:2|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">Nenhum serviço encontrado para este cliente.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if resultados %}
+            <tfoot>
+                <tr class="table-dark">
+                    <th colspan="{% if user.is_staff %}2{% else %}1{% endif %}" class="text-end">TOTAIS:</th>
+                    <th class="text-center">{{ total_servicos }} serviço(s)</th>
+                    <th class="text-end">R$ {{ total_faturamento|floatformat:2|intcomma }}</th>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        {% endif %}
+    </div>
+</div>
+
+{# --- MENSAGEM INICIAL --- #}
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <p class="text-center text-muted">Selecione um tipo de relatório e os filtros para começar.</p>
+    </div>
+</div>
+{% endif %}

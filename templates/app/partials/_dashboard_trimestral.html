@@ -1,0 +1,154 @@
+{% load humanize %}
+
+<div id="bloco-trimestral">
+    <hr class="mt-5">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <h4 class="mb-3 me-3">Visão Trimestral</h4>
+        <div class="row g-2 align-items-center mb-3">
+            <div class="col-auto">
+                <select name="trimestre_trimestral" class="form-select form-select-sm">
+                    {% for num, nome in trimestres_disponiveis %}
+                        <option value="{{ num }}" {% if num == trimestre_trimestral_selecionado %}selected{% endif %}>{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="ano_trimestral" class="form-select form-select-sm">
+                    {% for ano in anos_disponiveis %}
+                        <option value="{{ ano }}" {% if ano == ano_trimestral_selecionado %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-secondary btn-sm"
+                        hx-get="{% url 'app:get-dash-trimestral' %}"
+                        hx-target="#bloco-trimestral"
+                        hx-swap="outerHTML"
+                        hx-include="closest #bloco-trimestral">
+                    Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card text-white bg-secondary h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Faturamento em {{ trimestral_nome }}</h5>
+                    <p class="card-text fs-4">R$ {{ trimestral_faturamento|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header">Faturamento por Tipo de Serviço (Trimestral)</div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 300px;">
+                    <canvas id="trimestralPizzaChart"></canvas>
+                    <p id="no-trimestral-pizza-data" class="text-center text-muted" style="display: none;">Não há dados para exibir.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header">Faturamento do Trimestre</div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 300px;">
+                    <canvas id="trimestralFaturamentoBarChart"></canvas>
+                    <p id="no-trimestral-faturamento-data" class="text-center text-muted" style="display: none;">Não há dados para exibir.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header">Novos Clientes no Trimestre</div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 300px;">
+                    <canvas id="trimestralClientesBarChart"></canvas>
+                    <p id="no-trimestral-clientes-data" class="text-center text-muted" style="display: none;">Não há dados para exibir.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ trimestral_pizza_labels|json_script:"trimestral-pizza-labels" }}
+{{ trimestral_pizza_data|json_script:"trimestral-pizza-data" }}
+{{ trimestral_bar_labels|json_script:"trimestral-bar-labels" }}
+{{ trimestral_faturamento_data|json_script:"trimestral-faturamento-data" }}
+{{ trimestral_clientes_data|json_script:"trimestral-clientes-data" }}
+
+<script>
+    (function() {
+        const trimestralPizzaLabels = JSON.parse(document.getElementById('trimestral-pizza-labels').textContent);
+        const trimestralPizzaData = JSON.parse(document.getElementById('trimestral-pizza-data').textContent);
+        const trimestralBarLabels = JSON.parse(document.getElementById('trimestral-bar-labels').textContent);
+        const trimestralFaturamentoData = JSON.parse(document.getElementById('trimestral-faturamento-data').textContent);
+        const trimestralClientesData = JSON.parse(document.getElementById('trimestral-clientes-data').textContent);
+
+        // Gráfico de Pizza Trimestral
+        const trimestralPizzaCtx = document.getElementById('trimestralPizzaChart');
+        const noTrimestralPizzaData = document.getElementById('no-trimestral-pizza-data');
+        if (trimestralPizzaCtx) {
+            if(window.trimestralPizzaChartInstance) { window.trimestralPizzaChartInstance.destroy(); }
+            if (trimestralPizzaData.length > 0 && trimestralPizzaData.some(v => v > 0)) {
+                trimestralPizzaCtx.style.display = 'block';
+                if(noTrimestralPizzaData) noTrimestralPizzaData.style.display = 'none';
+                window.trimestralPizzaChartInstance = new Chart(trimestralPizzaCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: trimestralPizzaLabels,
+                        datasets: [{ data: trimestralPizzaData, backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#0dcaf0'], hoverOffset: 4 }]
+                    },
+                });
+            } else {
+                trimestralPizzaCtx.style.display = 'none';
+                if(noTrimestralPizzaData) noTrimestralPizzaData.style.display = 'block';
+            }
+        }
+
+        // Gráfico de Faturamento Trimestral
+        const trimestralFaturamentoCtx = document.getElementById('trimestralFaturamentoBarChart');
+        const noTrimestralFaturamentoData = document.getElementById('no-trimestral-faturamento-data');
+        if (trimestralFaturamentoCtx) {
+            if(window.trimestralFaturamentoChartInstance) { window.trimestralFaturamentoChartInstance.destroy(); }
+            if (trimestralFaturamentoData.some(v => v > 0)) {
+                trimestralFaturamentoCtx.style.display = 'block';
+                if(noTrimestralFaturamentoData) noTrimestralFaturamentoData.style.display = 'none';
+                window.trimestralFaturamentoChartInstance = new Chart(trimestralFaturamentoCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: trimestralBarLabels,
+                        datasets: [{ label: 'Faturamento', data: trimestralFaturamentoData, backgroundColor: 'rgba(108, 117, 125, 0.6)' }]
+                    },
+                    options: { scales: { y: { beginAtZero: true } } }
+                });
+            } else {
+                trimestralFaturamentoCtx.style.display = 'none';
+                if(noTrimestralFaturamentoData) noTrimestralFaturamentoData.style.display = 'block';
+            }
+        }
+
+        // Gráfico de Clientes Trimestral
+        const trimestralClientesCtx = document.getElementById('trimestralClientesBarChart');
+        const noTrimestralClientesData = document.getElementById('no-trimestral-clientes-data');
+        if (trimestralClientesCtx) {
+            if(window.trimestralClientesChartInstance) { window.trimestralClientesChartInstance.destroy(); }
+            if (trimestralClientesData.some(v => v > 0)) {
+                trimestralClientesCtx.style.display = 'block';
+                if(noTrimestralClientesData) noTrimestralClientesData.style.display = 'none';
+                window.trimestralClientesChartInstance = new Chart(trimestralClientesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: trimestralBarLabels,
+                        datasets: [{ label: 'Novos Clientes', data: trimestralClientesData, backgroundColor: 'rgba(255, 193, 7, 0.6)' }]
+                    },
+                    options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                });
+            } else {
+                trimestralClientesCtx.style.display = 'none';
+                if(noTrimestralClientesData) noTrimestralClientesData.style.display = 'block';
+            }
+        }
+    })();
+</script>

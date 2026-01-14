@@ -1,0 +1,18 @@
+<a  id="tarefa-{{ tarefa.id }}"
+    href="#" 
+    class="list-group-item list-group-item-action"
+    hx-get="{% url 'app:detalhe-tarefa' tarefa.id %}" {# <--- CORREÇÃO AQUI #}
+    hx-target="#modal-content-container"
+    data-bs-toggle="modal" 
+    data-bs-target="#detalheTarefaModal">
+
+    <div class="d-flex w-100 justify-content-between">
+        <h6 class="mb-1">{{ tarefa.titulo }}</h6>
+        <small>
+            {% if tarefa.status == 'NAO_INICIADA' %}{{ tarefa.data_criacao|date:"d/m/y" }}
+            {% elif tarefa.status == 'INICIADA' %}{{ tarefa.data_inicio|date:"d/m/y" }}
+            {% else %}{{ tarefa.data_finalizacao|date:"d/m/y" }}{% endif %}
+        </small>
+    </div>
+    <small class="text-muted">Criado por: {{ tarefa.criado_por.username }}</small>
+</a>

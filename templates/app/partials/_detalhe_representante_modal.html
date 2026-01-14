@@ -1,0 +1,80 @@
+{% load humanize %}
+
+<div class="modal-header">
+    <h5 class="modal-title">Detalhes de {{ rep.username }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    {# --- DADOS CADASTRAIS --- #}
+    <div class="row">
+        <div class="col-md-6">
+            <h4>{{ rep.get_full_name }}</h4>
+            <p class="mb-1"><strong>E-mail:</strong> {{ rep.email }}</p>
+            <p class="mb-1"><strong>Telefone:</strong> {{ rep.profile.telefone|default:"Não informado" }}</p>
+            <p>
+                <strong>Status:</strong>
+                {% if rep.profile.status == 'ATIVO' %}
+                    <span class="badge bg-success">Ativo</span>
+                {% else %}
+                    <span class="badge bg-danger">Inativo</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-6">
+            <h4>Performance Geral</h4>
+            <p class="mb-1"><strong>Clientes na Carteira:</strong> {{ clientes_count }}</p>
+            <p class="mb-1"><strong>Ticket Médio (Serviços):</strong> R$ {{ ticket_medio|floatformat:2|intcomma }}</p>
+            <p class="mb-1"><strong>Taxa de Conversão (Histórica):</strong> {{ taxa_conversao_hist|floatformat:1 }}%</p>
+            <p class="mb-1"><strong>Ciclo Médio de Negociação:</strong> {{ media_dias_negociacao }} dias</p>
+        </div>
+    </div>
+    <hr>
+
+    {# --- DADOS DO MÊS ATUAL --- #}
+    <h4>Desempenho no Mês Atual</h4>
+    <div class="row">
+        <div class="col-lg-3 col-6 mb-3">
+            <div class="card text-center bg-light h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Vendas</h6>
+                    <p class="card-text fs-4">{{ total_vendas_qtd_mes }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6 mb-3">
+            <div class="card text-center bg-light h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Faturamento</h6>
+                    <p class="card-text fs-4">R$ {{ total_vendas_valor_mes|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6 mb-3">
+            <div class="card text-center bg-light h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Conversão</h6>
+                    <p class="card-text fs-4">{{ taxa_conversao_mes|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6 mb-3">
+            <div class="card text-center bg-light h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Prospec. Pendentes</h6>
+                    <p class="card-text fs-4">{{ prospeccoes_pendentes }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-2">
+        <strong>Meta do Mês:</strong> 
+        {% if meta_mes_atual %}
+            R$ {{ meta_mes_atual.valor|floatformat:2|intcomma }}
+        {% else %}
+            <span class="text-muted">Nenhuma meta definida.</span>
+        {% endif %}
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+</div>

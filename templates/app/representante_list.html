@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Gerenciar Usuarios{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Usuarios do Sistema</h1>
+        {% if user.is_staff or user.profile.tem_acesso_gestao %}
+        <a href="{% url 'app:representante-create' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Novo Usuario
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Username</th>
+                    <th>E-mail</th>
+                    <th>Setor</th>
+                    <th>Status</th>
+                    <th>Acoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rep in representantes %}
+                <tr style="cursor: pointer;"
+                    hx-get="{% url 'app:detalhe-representante' rep.pk %}"
+                    hx-target="#main-modal-content"
+                    data-bs-toggle="modal"
+                    data-bs-target="#main-modal">
+                    <td>{{ rep.profile.nome_completo|default:rep.username }}</td>
+                    <td>{{ rep.username }}</td>
+                    <td>{{ rep.email }}</td>
+                    <td><span class="badge bg-info">{{ rep.profile.get_setor_display }}</span></td>
+                    <td>
+                        {% if rep.is_active %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'app:representante-update' rep.pk %}" class="btn btn-sm btn-warning">Editar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">Nenhum usuario cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

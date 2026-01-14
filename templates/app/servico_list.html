@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load humanize %}
+
+{% block title %}Painel de Metas e Produção{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <h1>Painel de Metas e Produção</h1>
+    
+    {# Regra Atualizada: Apenas Diretoria Comercial e Admin (Gestão) podem lançar #}
+    {% if user.profile.tem_acesso_gestao or user.is_staff %}
+    <a href="{% url 'app:servico-create' %}" class="btn btn-primary mt-2 mt-md-0">
+        <i class="bi bi-plus-lg"></i> Registrar Novo Serviço
+    </a>
+    {% endif %}
+</div>
+
+{# --- 1. FILTRO DE MÊS E ANO --- #}
+<div class="card mb-4 bg-light">
+    <div class="card-body py-3">
+        <form method="get" action="{% url 'app:servico-list' %}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="id_mes" class="form-label fw-bold">Mês Base</label>
+                <select name="mes" id="id_mes" class="form-select">
+                    {% for num, nome in meses_disponiveis %}
+                        <option value="{{ num }}" {% if num|stringformat:"s" == mes_selecionado|stringformat:"s" %}selected{% endif %}>{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="id_ano" class="form-label fw-bold">Ano Base</label>
+                <select name="ano" id="id_ano" class="form-select">
+                    {% for ano in anos_disponiveis %}
+                        <option value="{{ ano|stringformat:'d' }}" {% if ano|stringformat:"s" == ano_selecionado|stringformat:"s" %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-funnel"></i> Aplicar Filtros
+                </button>
+                
+                <a href="{% url 'app:servico-list' %}" class="btn btn-outline-secondary flex-grow-1">
+                    <i class="bi bi-arrow-clockwise"></i> Mês Atual
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if ultimo_lancamento %}
+<div class="alert alert-info d-flex align-items-center justify-content-between shadow-sm border-0 mb-4" role="alert">
+    <div>
+        <i class="bi bi-clock-history fs-4 me-2"></i>
+        <span class="fw-bold">Último lançamento realizado:</span>
+        <span class="ms-1">{{ ultimo_lancamento.data_registro|date:"d/m/Y \à\s H:i" }}</span>
+        <span class="mx-2">|</span>
+        <span>Responsável: <strong>{{ ultimo_lancamento.fechado_por.get_full_name|default:ultimo_lancamento.fechado_por.username }}</strong></span>
+    </div>
+    <div class="text-end">
+        <small class="text-muted">Cliente: {{ ultimo_lancamento.cliente.razao_social }}</small>
+    </div>
+</div>
+{% endif %}
+
+{% if sem_lancamentos %}
+<div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Atenção:</strong> Nenhum serviço/transporte encontrado para o período selecionado (Mês: {{ mes_selecionado }} / Ano: {{ ano_selecionado }}).
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+{# --- LOOP POR REPRESENTANTE --- #}
+{% for item_rep in lista_por_representante %}
+<div class="card mb-5 border-0 shadow-sm">
+    {# ========== CABEÇALHO DO REPRESENTANTE (CLICÁVEL/EXPANSÍVEL) ========== #}
+    <div class="card-header bg-dark text-white p-0">
+        {# Linha Principal - Clicável #}
+        <div class="d-flex justify-content-between align-items-center px-3 py-2" 
+             style="cursor: pointer;"
+             data-bs-toggle="collapse" 
+             data-bs-target="#collapse-rep-{{ item_rep.representante.id }}"
+             aria-expanded="false">
+            <h5 class="mb-0">
+                <i class="bi bi-chevron-down me-2 small"></i>
+                <i class="bi bi-person-badge-fill me-2"></i> Carteira: {{ item_rep.representante.get_full_name|default:item_rep.representante.username }}
+            </h5>
+            
+            <div class="d-none d-md-block">
+                <span class="badge bg-primary text-white me-2">Faturado: R$ {{ item_rep.resumo.faturamento|floatformat:2|intcomma }}</span>
+                <span class="badge bg-light text-dark me-2">Meta: R$ {{ item_rep.resumo.meta|floatformat:2|intcomma }}</span>
+                
+                <span class="badge {% if item_rep.resumo.percentual >= 100 %}bg-success{% else %}bg-secondary{% endif %}">
+                    Atingido: {{ item_rep.resumo.percentual|floatformat:1 }}%
+                </span>
+            </div>
+        </div>
+        
+        {# ========== ÁREA EXPANSÍVEL - DETALHES DA META DO REPRESENTANTE ========== #}
+        <div class="collapse" id="collapse-rep-{{ item_rep.representante.id }}">
+            <div class="bg-secondary bg-opacity-25 p-3 border-top border-secondary">
+                <div class="row g-4">
+                    
+                    {# ========== COLUNA 1: PERFORMANCE DA META ========== #}
+                    <div class="col-md-6">
+                        <h6 class="text-white text-uppercase small fw-bold mb-3">
+                            <i class="bi bi-graph-up me-1"></i> Performance da Meta (Geral)
+                        </h6>
+                        {% if item_rep.resumo.meta > 0 %}
+                            {# Barra de Progresso #}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small mb-1 text-white">
+                                    <span>Já Faturado:</span>
+                                    <span class="fw-bold">{{ item_rep.resumo.percentual|floatformat:1 }}%</span>
+                                </div>
+                                <div class="progress" style="height: 12px;">
+                                    <div class="progress-bar {% if item_rep.resumo.percentual >= 100 %}bg-success{% else %}bg-info{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {% if item_rep.resumo.percentual > 100 %}100{% else %}{{ item_rep.resumo.percentual|floatformat:0 }}{% endif %}%">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row text-white small">
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <span class="text-white-50">Falta para Meta (%):</span>
+                                        <span class="fw-bold d-block text-warning">
+                                            {% if item_rep.resumo.percentual >= 100 %}0,0%{% else %}{{ item_rep.resumo.percentual_faltante|floatformat:1 }}%{% endif %}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span class="text-white-50">Valor Faltante (R$):</span>
+                                        <span class="fw-bold d-block text-warning">
+                                            R$ {{ item_rep.resumo.valor_faltante|floatformat:2|intcomma }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div>
+                                        <span class="text-white-50">Meta Diária ({{ item_rep.resumo.dias_uteis }} dias úteis):</span>
+                                        <span class="fw-bold d-block">R$ {{ item_rep.resumo.meta_diaria|floatformat:2|intcomma }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning py-2 small mb-0">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Nenhuma meta definida para os clientes deste representante no período.
+                                {% if user.is_staff or user.profile.tem_acesso_gestao %}
+                                <a href="{% url 'app:meta-create' %}" class="alert-link">Definir agora</a>.
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {# ========== COLUNA 2: META DIÁRIA CORRIGIDA ========== #}
+                    <div class="col-md-6">
+                        <h6 class="text-white text-uppercase small fw-bold mb-3">
+                            <i class="bi bi-calculator me-1"></i> Meta Diária Corrigida (Geral)
+                        </h6>
+                        {% if item_rep.resumo.meta > 0 and item_rep.resumo.valor_faltante > 0 %}
+                            <div class="bg-dark p-3 rounded">
+                                <label for="dias-restantes-rep-{{ item_rep.representante.id }}" class="form-label small text-white">
+                                    Dias úteis restantes no mês:
+                                </label>
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="dias-restantes-rep-{{ item_rep.representante.id }}" 
+                                           placeholder="Ex: 10" 
+                                           min="1">
+                                    <button class="btn btn-primary" 
+                                            type="button" 
+                                            onclick="calcularMetaCorrigida('rep-{{ item_rep.representante.id }}', {{ item_rep.resumo.valor_faltante|stringformat:'f' }})">
+                                        Calcular
+                                    </button>
+                                </div>
+                                <div id="resultado-meta-rep-{{ item_rep.representante.id }}" class="text-center mt-2 d-none">
+                                    <small class="text-white-50 d-block">Precisa faturar por dia:</small>
+                                    <span class="fs-4 fw-bold text-success" id="valor-meta-corrigida-rep-{{ item_rep.representante.id }}">R$ 0,00</span>
+                                </div>
+                            </div>
+                        {% elif item_rep.resumo.meta > 0 %}
+                            <div class="alert alert-success py-2 small mb-0">
+                                <i class="bi bi-check-circle-fill me-1"></i> Meta já atingida! 🎉
+                            </div>
+                        {% else %}
+                            <p class="text-white-50 small mb-0">Requer definição de meta.</p>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# ========== TABELA DE CLIENTES COM DETALHES DE META ========== #}
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="border-collapse: collapse;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 35%;">Cliente</th>
+                        <th class="text-end" style="width: 15%;">Meta do Mês</th>
+                        <th class="text-end" style="width: 15%;">Realizado</th>
+                        <th class="text-center" style="width: 10%;">Status</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in item_rep.clientes %}
+                    {# --- LINHA DO CLIENTE --- #}
+                    <tr class="align-middle cursor-pointer" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#collapse-{{ item.cliente.id }}" 
+                        aria-expanded="false" 
+                        style="cursor: pointer;">
+                        
+                        <td class="fw-bold text-primary">
+                            <i class="bi bi-chevron-down me-2 small"></i>
+                            {{ item.cliente.razao_social }}
+                        </td>
+                        <td class="text-end">
+                            {% if item.tem_meta %}
+                                R$ {{ item.meta_valor|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold">
+                            R$ {{ item.faturamento_bruto|floatformat:2|intcomma }}
+                        </td>
+                        <td class="text-center">
+                            {% if item.tem_meta %}
+                                {% if item.percentual_atingido >= 100 %}
+                                    <span class="badge bg-success">{{ item.percentual_atingido|floatformat:0 }}%</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ item.percentual_atingido|floatformat:0 }}%</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Sem Meta</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-muted small">
+                            <i class="bi bi-eye"></i>
+                        </td>
+                    </tr>
+
+                    {# --- LINHA EXPANDIDA COM 3 COLUNAS --- #}
+                    <tr>
+                        <td colspan="5" class="p-0 border-0">
+                            <div class="collapse bg-light border-bottom" id="collapse-{{ item.cliente.id }}">
+                                <div class="p-4">
+                                    <div class="row g-4">
+                                        
+                                        {# ========== COLUNA 1: PRODUÇÃO ========== #}
+                                        <div class="col-md-4 border-end">
+                                            <h6 class="text-muted text-uppercase small fw-bold mb-3">
+                                                <i class="bi bi-truck me-1"></i> Produção
+                                            </h6>
+                                            <ul class="list-group list-group-flush bg-transparent">
+                                                <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                                                    <span>1. Qtd Viagens:</span>
+                                                    <span class="fw-bold">{{ item.total_viagens }}</span>
+                                                </li>
+                                                <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                                                    <span>2. Valor Acumulado:</span>
+                                                    <span class="fw-bold text-primary">R$ {{ item.faturamento_bruto|floatformat:2|intcomma }}</span>
+                                                </li>
+                                            </ul>
+                                            <button class="btn btn-outline-info btn-sm mt-3"
+                                                    hx-get="{% url 'app:servico-historico-modal' item.cliente.id mes_selecionado ano_selecionado %}"
+                                                    hx-target="#main-modal-content"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#main-modal">
+                                                <i class="bi bi-clock-history"></i> Ver Histórico de Viagens
+                                            </button>
+                                        </div>
+                                        
+                                        {# ========== COLUNA 2: PERFORMANCE DA META ========== #}
+                                        <div class="col-md-4 border-end">
+                                            <h6 class="text-muted text-uppercase small fw-bold mb-3">
+                                                <i class="bi bi-graph-up me-1"></i> Performance da Meta
+                                            </h6>
+                                            {% if item.tem_meta %}
+                                                {# Barra de Progresso #}
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <span>3. Já Faturado:</span>
+                                                        <span class="fw-bold">{{ item.percentual_atingido|floatformat:1 }}%</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 10px;">
+                                                        <div class="progress-bar {% if item.percentual_atingido >= 100 %}bg-success{% else %}bg-info{% endif %}" 
+                                                             role="progressbar" 
+                                                             style="width: {% if item.percentual_atingido > 100 %}100{% else %}{{ item.percentual_atingido|floatformat:0 }}{% endif %}%">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <ul class="list-group list-group-flush bg-transparent small">
+                                                    <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                                                        <span>4. Falta para Meta (%):</span>
+                                                        <span class="fw-bold text-danger">
+                                                            {% if item.percentual_atingido >= 100 %}0,0%{% else %}{{ item.percentual_faltante|floatformat:1 }}%{% endif %}
+                                                        </span>
+                                                    </li>
+                                                    <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                                                        <span>Valor Faltante (R$):</span>
+                                                        <span class="fw-bold text-danger">R$ {{ item.valor_faltante|floatformat:2|intcomma }}</span>
+                                                    </li>
+                                                    <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                                                        <span>5. Meta Diária ({{ item.dias_uteis }} dias):</span>
+                                                        <span class="fw-bold">R$ {{ item.meta_diaria|floatformat:2|intcomma }}</span>
+                                                    </li>
+                                                </ul>
+                                            {% else %}
+                                                <div class="alert alert-warning py-2 small">
+                                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                                    Nenhuma meta definida para este cliente.
+                                                    {% if user.is_staff or user.profile.tem_acesso_gestao %}
+                                                    <a href="{% url 'app:meta-create' %}" class="alert-link">Criar meta</a>.
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {# ========== COLUNA 3: META DIÁRIA CORRIGIDA ========== #}
+                                        <div class="col-md-4">
+                                            <h6 class="text-muted text-uppercase small fw-bold mb-3">
+                                                <i class="bi bi-calculator me-1"></i> 6. Meta Diária Corrigida
+                                            </h6>
+                                            {% if item.tem_meta and item.valor_faltante > 0 %}
+                                                <div class="bg-white p-3 rounded border">
+                                                    <label for="dias-restantes-{{ item.cliente.id }}" class="form-label small">
+                                                        Dias úteis restantes no mês:
+                                                    </label>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="number" 
+                                                               class="form-control" 
+                                                               id="dias-restantes-{{ item.cliente.id }}" 
+                                                               placeholder="Ex: 10" 
+                                                               min="1">
+                                                        <button class="btn btn-primary" 
+                                                                type="button" 
+                                                                onclick="calcularMetaCorrigida('{{ item.cliente.id }}', {{ item.valor_faltante|stringformat:'f' }})">
+                                                            Calcular
+                                                        </button>
+                                                    </div>
+                                                    <div id="resultado-meta-{{ item.cliente.id }}" class="text-center mt-2 d-none">
+                                                        <small class="text-muted d-block">Precisa faturar por dia:</small>
+                                                        <span class="fs-5 fw-bold text-success" id="valor-meta-corrigida-{{ item.cliente.id }}">R$ 0,00</span>
+                                                    </div>
+                                                </div>
+                                            {% elif item.tem_meta %}
+                                                <div class="alert alert-success py-2 small mb-0">
+                                                    <i class="bi bi-check-circle-fill me-1"></i> Meta já atingida! 🎉
+                                                </div>
+                                            {% else %}
+                                                <p class="text-muted small mb-0">
+                                                    Defina uma meta para usar esta calculadora.
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% if not item_rep.clientes %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            Nenhum cliente cadastrado ou produção para este representante.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+    function calcularMetaCorrigida(id, valorFaltante) {
+        const inputDias = document.getElementById(`dias-restantes-${id}`);
+        const resultadoDiv = document.getElementById(`resultado-meta-${id}`);
+        const valorSpan = document.getElementById(`valor-meta-corrigida-${id}`);
+        
+        const dias = parseInt(inputDias.value);
+
+        if (!dias || dias <= 0) {
+            alert("Por favor, digite um número válido de dias restantes.");
+            return;
+        }
+
+        const metaCorrigida = valorFaltante / dias;
+
+        const formatado = metaCorrigida.toLocaleString('pt-BR', { 
+            style: 'currency', 
+            currency: 'BRL' 
+        });
+
+        valorSpan.textContent = formatado;
+        resultadoDiv.classList.remove('d-none');
+    }
+</script>
+{% endblock %}

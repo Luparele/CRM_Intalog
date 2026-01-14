@@ -1,0 +1,190 @@
+{% load humanize %}
+
+<div id="bloco-mensal">
+    {# Este elemento invisível vai carregar os dados do Django para o JavaScript #}
+    <div id="mensal-js-data" data-is-staff="{{ user.is_staff|yesno:'true,false' }}" style="display: none;"></div>
+
+    <hr>
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <h4 class="mb-3 me-3">Resumo Mensal</h4>
+        <div class="row g-2 align-items-center mb-3">
+            <div class="col-auto">
+                <select name="mes_mensal" class="form-select form-select-sm">
+                    {% for num, nome in meses_disponiveis %}
+                        <option value="{{ num }}" {% if num == mes_mensal_selecionado %}selected{% endif %}>{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="ano_mensal" class="form-select form-select-sm">
+                    {% for ano in anos_disponiveis %}
+                        <option value="{{ ano }}" {% if ano == ano_mensal_selecionado %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary btn-sm"
+                        hx-get="{% url 'app:get-dash-mensal' %}"
+                        hx-target="#bloco-mensal"
+                        hx-swap="outerHTML"
+                        hx-include="closest #bloco-mensal">
+                    Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6 mb-3">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Faturamento em {{ mensal_nome_mes }}</h5>
+                    <p class="card-text fs-4">R$ {{ mensal_faturamento|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Viagens no Mês</h5>
+                    <p class="card-text fs-4">{{ mensal_servicos_fechados }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if mensal_meta %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Meta de {{ mensal_nome_mes }}</h4>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                Progresso: R$ {{ mensal_faturamento|floatformat:2|intcomma }} de R$ {{ mensal_meta.valor|floatformat:2|intcomma }}
+            </h5>
+            <div class="progress" style="height: 25px; background-color: #e9ecef; position: relative;">
+                <div class="progress-bar bg-success" role="progressbar" data-width="{{ mensal_percentual_meta }}" aria-valuenow="{{ mensal_percentual_meta|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                <strong style="position: absolute; width: 100%; text-align: center; line-height: 25px; color: black;">
+                    {{ mensal_percentual_meta|floatformat:1 }}%
+                </strong>
+            </div>
+            <div class="row text-center mt-3">
+                <div class="col-md-6">
+                    <div class="text-muted">Faltam para a meta</div>
+                    <div class="fs-5 fw-bold">R$ {{ mensal_faturamento_faltante|floatformat:2|intcomma }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted">Dias restantes no mês</div>
+                    <div class="fs-5 fw-bold">{{ mensal_dias_restantes }} dia{{ mensal_dias_restantes|pluralize }}</div>
+                </div>
+            </div>
+            
+            {# --- ALTERAÇÃO AQUI: Exibe para todos que NÃO são representantes (Admin, Financeiro, Comercial) --- #}
+            {% if not user.profile.is_representante %}
+            <hr class="my-4">
+            <h5>Desempenho da Equipe e Clientes</h5>
+            <div class="row">
+                {# COLUNA DA ESQUERDA: Meta Individual dos Representantes #}
+                <div class="col-lg-6">
+                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Metas da Equipe</h6>
+                    {% for rep in representantes_performance %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small">
+                            <span>{{ rep.nome }}</span>
+                            <span>R$ {{ rep.faturamento|floatformat:2|intcomma }}</span>
+                        </div>
+                        <div class="progress" style="height: 15px;">
+                            <div class="progress-bar" role="progressbar" data-width="{{ rep.percentual_individual }}">
+                                {{ rep.percentual_individual|floatformat:0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">Sem dados de representantes para exibir.</p>
+                    {% endfor %}
+                </div>
+
+                {# COLUNA DA DIREITA: Ranking de Clientes #}
+                <div class="col-lg-6 border-start ps-lg-4 mt-4 mt-lg-0">
+                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Ranking de Clientes (Faturamento)</h6>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover table-striped">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th scope="col">Cliente</th>
+                                    <th scope="col" class="text-center">Viagens</th>
+                                    <th scope="col" class="text-end">Total (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cliente in desempenho_clientes %}
+                                <tr>
+                                    <td><small>{{ cliente.cliente__razao_social|truncatechars:25 }}</small></td>
+                                    <td class="text-center"><small>{{ cliente.total_viagens }}</small></td>
+                                    <td class="text-end fw-bold"><small>R$ {{ cliente.total_valor|floatformat:2|intcomma }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted small">Sem produção neste mês.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% elif not user.profile.is_representante %}
+        {# Caso Admin/Financeiro não tenha meta GERAL cadastrada, mas queira ver os dados #}
+        {# Poderíamos exibir a tabela de equipe mesmo sem meta geral, mas a lógica atual depende da meta_mensal #}
+        <div class="alert alert-info">
+            Defina uma meta geral para visualizar o desempenho detalhado da equipe.
+        </div>
+    {% elif user.profile.is_representante %}
+    <div class="alert alert-secondary">
+        Nenhuma meta individual definida para você neste mês.
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">Meus Melhores Clientes do Mês</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-3">Cliente</th>
+                            <th scope="col" class="text-center">Viagens</th>
+                            <th scope="col" class="text-end pe-3">Total (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in desempenho_clientes %}
+                        <tr>
+                            <td class="ps-3">{{ cliente.cliente__razao_social }}</td>
+                            <td class="text-center">{{ cliente.total_viagens }}</td>
+                            <td class="text-end fw-bold pe-3">R$ {{ cliente.total_valor|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-3">Sem serviços registrados neste mês.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    (function() {
+        document.querySelectorAll('#bloco-mensal .progress-bar[data-width]').forEach(bar => {
+            const widthValue = parseFloat(bar.getAttribute('data-width'));
+            bar.style.width = Math.min(widthValue, 100) + '%';
+        });
+    })();
+</script>

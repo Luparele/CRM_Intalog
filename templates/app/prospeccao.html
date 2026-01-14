@@ -1,0 +1,174 @@
+﻿{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load humanize %}
+
+{% block title %}Funil de Prospecção{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <h1>Funil de Prospecção</h1>
+    <div class="d-flex gap-2">
+        {# BOTÃO PARA CARREGAR O DASHBOARD #}
+        <!-- 
+        <button class="btn btn-outline-info"
+                hx-get="{% url 'app:dashboard-prospeccao' %}"
+                hx-target="#dashboard-prospeccao-container"
+                hx-swap="innerHTML show:top">
+            <i class="bi bi-graph-up-arrow"></i> Exibir Dashboard
+        </button>
+        -->
+
+
+        {# BOTAO PARA CADASTRAR PROSPECT #}
+        <button class="btn btn-outline-success" 
+                hx-get="{% url 'app:criar-cliente-prospeccao-modal' %}"
+                hx-target="#main-modal-content"
+                data-bs-toggle="modal" 
+                data-bs-target="#main-modal">
+            <i class="bi bi-person-plus"></i> Cadastrar Prospect
+        </button>
+        <button class="btn btn-primary" 
+                hx-get="{% url 'app:criar-prospeccao' %}"
+                hx-target="#main-modal-content"
+                data-bs-toggle="modal" 
+                data-bs-target="#main-modal">
+            + Nova Prospecção
+        </button>
+    </div>
+</div>
+
+{# --- BLOCO DE FILTROS E LISTAS (Conteúdo existente) --- #}
+<div class="card mb-4">
+    <div class="card-header">Filtros da Lista</div>
+    <div class="card-body">
+        <form method="get" id="prospeccao-filter-form">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="id_data_inicial" class="form-label">Data Inicial (Criação)</label>
+                    <input type="date" class="form-control form-control-sm" name="data_inicial" id="id_data_inicial" value="{{ request.GET.data_inicial }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="id_data_final" class="form-label">Data Final (Criação)</label>
+                    <input type="date" class="form-control form-control-sm" name="data_final" id="id_data_final" value="{{ request.GET.data_final }}">
+                </div>
+                {% if not user.profile.is_representante %}
+                <div class="col-md-4">
+                    <label for="id_representante" class="form-label">Representante</label>
+                    <select name="representante_filtro" class="form-select form-select-sm">
+                        <option value="todos" {% if filtro_selecionado == 'todos' %}selected{% endif %}>Todos</option>
+                        <option value="minhas" {% if filtro_selecionado == 'minhas' %}selected{% endif %}>Minhas Prospecções</option>
+                        <optgroup label="Equipe">
+                            {% for rep in representantes %}
+                                <option value="{{ rep.id }}" {% if filtro_selecionado == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.username }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar Lista</button>
+                </div>
+            </div>
+            
+            {# Campos ocultos para manter a ordenação ao filtrar #}
+            <input type="hidden" name="sort_novas" value="{{ sort_novas_current }}">
+            <input type="hidden" name="sort_neg" value="{{ sort_neg_current }}">
+            <input type="hidden" name="sort_fin" value="{{ sort_fin_current }}">
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    {# Coluna 1: Novas #}
+    <div class="col-md-4">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span>Novas</span>
+                <a href="?sort_novas={{ sort_novas_next }}&..." class="text-white"><i class="bi bi-arrow-down-up"></i></a>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for prospeccao in novas %}
+                    {% include 'app/partials/_prospeccao_card.html' %}
+                {% empty %}
+                    <div class="list-group-item text-center text-muted">Nenhuma nova prospecção.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Coluna 2: Em Negociação #}
+    <div class="col-md-4">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <span>Em Negociação</span>
+                <a href="?sort_neg={{ sort_neg_next }}&..." class="text-dark"><i class="bi bi-arrow-down-up"></i></a>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for prospeccao in negociando %}
+                    {% include 'app/partials/_prospeccao_card.html' %}
+                {% empty %}
+                    <div class="list-group-item text-center text-muted">Nenhuma negociação em andamento.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Coluna 3: Finalizadas #}
+    <div class="col-md-4">
+        <div class="card h-100 border-success">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <span>Finalizadas</span>
+                <a href="?sort_fin={{ sort_fin_next }}&..." class="text-white"><i class="bi bi-arrow-down-up"></i></a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="nav nav-tabs nav-fill" id="finalizadasTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="fechado-tab" data-bs-toggle="tab" data-bs-target="#fechado" type="button" role="tab">Fechado</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="desistencia-tab" data-bs-toggle="tab" data-bs-target="#desistencia" type="button" role="tab">Desistência</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="perdida-tab" data-bs-toggle="tab" data-bs-target="#perdida" type="button" role="tab">Perdida</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="finalizadasTabContent">
+                    <div class="tab-pane fade show active" id="fechado" role="tabpanel">
+                        <div class="list-group list-group-flush">
+                            {% for prospeccao in finalizadas_fechado %}
+                                {% include 'app/partials/_prospeccao_card.html' %}
+                            {% empty %}
+                                <div class="list-group-item text-center text-muted">Nenhum item.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="desistencia" role="tabpanel">
+                        <div class="list-group list-group-flush">
+                            {% for prospeccao in finalizadas_desistencia %}
+                                {% include 'app/partials/_prospeccao_card.html' %}
+                            {% empty %}
+                                <div class="list-group-item text-center text-muted">Nenhum item.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="perdida" role="tabpanel">
+                        <div class="list-group list-group-flush">
+                            {% for prospeccao in finalizadas_perdida %}
+                                {% include 'app/partials/_prospeccao_card.html' %}
+                            {% empty %}
+                                <div class="list-group-item text-center text-muted">Nenhum item.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="my-5">
+
+{# --- CONTAINER ONDE O DASHBOARD SERÁ CARREGADO --- #}
+<div id="dashboard-prospeccao-container"></div>
+
+{% endblock %}

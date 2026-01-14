@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load humanize %}
+
+{% block title %}Dashboard de Prospecção{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Dashboard de Prospecção</h1>
+    </div>
+
+    {# --- PAINEL DE FILTROS --- #}
+    <div class="card mb-4">
+        <div class="card-header">
+            Filtros
+        </div>
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="data_inicial" class="form-label">Data Inicial</label>
+                        <input type="date" name="data_inicial" id="data_inicial" class="form-control" value="{{ request.GET.data_inicial }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="data_final" class="form-label">Data Final</label>
+                        <input type="date" name="data_final" id="data_final" class="form-control" value="{{ request.GET.data_final }}">
+                    </div>
+                    {% if user.is_staff %}
+                    <div class="col-md-4">
+                        <label for="representante_id" class="form-label">Usuário</label>
+                        <select name="representante_id" id="representante_id" class="form-select">
+                            <option value="todos">Todos</option>
+                            {% for rep in representantes %}
+                            <option value="{{ rep.id }}" {% if request.GET.representante_id == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary">Filtrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# --- CARDS DE KPIS --- #}
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-header">Taxa de Conversão</div>
+                <div class="card-body">
+                    <p class="card-text fs-1 fw-bold">{{ taxa_conversao|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center h-100 text-white bg-success">
+                <div class="card-header">Total Fechado (R$)</div>
+                <div class="card-body">
+                    <p class="card-text fs-3 fw-bold">R$ {{ total_fechado_valor|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-header">Ticket Médio (Fechado)</div>
+                <div class="card-body">
+                    <p class="card-text fs-3 fw-bold">R$ {{ ticket_medio|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-header">Tempo Médio de Negociação</div>
+                <div class="card-body">
+                    <p class="card-text fs-1 fw-bold">{{ tempo_medio_dias }} <span class="fs-6">dias</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- ÁREA DE GRÁFICOS --- #}
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Funil de Finalização</div>
+                <div class="card-body d-flex justify-content-center align-items-center">
+                    <canvas id="funilChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% if user.is_staff %}
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Performance por Usuário (R$ Fechado)</div>
+                <div class="card-body">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Previsão de Faturamento (Prospecções Fechadas)</h4>
+        </div>
+        <div class="card-body">
+            <p class="card-text text-muted">Esta tabela projeta a receita futura com base no valor total e na duração das prospecções com status "Serviço Fechado".</p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Mês/Ano</th>
+                        <th class="text-end">Valor Previsto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for previsao in previsao_faturamento %}
+                    <tr>
+                        <td>{{ previsao.mes_ano }}</td>
+                        <td class="text-end">R$ {{ previsao.valor|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center">Nenhuma receita prevista para os próximos meses.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+{# Os dados são passados do Django para o HTML aqui #}
+{{ funil_labels|json_script:"funil-labels" }}
+{{ funil_counts|json_script:"funil-counts" }}
+{% if user.is_staff %}
+{{ performance_labels|json_script:"performance-labels" }}
+{{ performance_valores|json_script:"performance-valores" }}
+{% endif %}
+
+{# Este script é 100% JavaScript puro e não gera mais erros no editor #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Gráfico de Funil (Pizza)
+    const funilLabels = JSON.parse(document.getElementById('funil-labels').textContent);
+    const funilData = JSON.parse(document.getElementById('funil-counts').textContent);
+    const funilCtx = document.getElementById('funilChart');
+    if (funilCtx && funilData.length > 0) {
+        new Chart(funilCtx, {
+            type: 'pie',
+            data: {
+                labels: funilLabels,
+                datasets: [{
+                    data: funilData,
+                    backgroundColor: ['#198754', '#dc3545', '#ffc107'], // Verde, Vermelho, Amarelo
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // 2. Gráfico de Performance (Barras) - Apenas para Admins
+    // Verificamos se o elemento com os dados existe. Ele só existirá se o usuário for admin.
+    const performanceLabelsElement = document.getElementById('performance-labels');
+    if (performanceLabelsElement) {
+        const perfLabels = JSON.parse(performanceLabelsElement.textContent);
+        const perfData = JSON.parse(document.getElementById('performance-valores').textContent);
+        const perfCtx = document.getElementById('performanceChart');
+        
+        if (perfCtx && perfData.length > 0) {
+            new Chart(perfCtx, {
+                type: 'bar',
+                data: {
+                    labels: perfLabels,
+                    datasets: [{
+                        label: 'Faturamento Fechado',
+                        data: perfData,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

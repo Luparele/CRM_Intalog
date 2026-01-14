@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% if object %}Editar Representante{% else %}Novo Representante{% endif %}{% endblock %}
+
+{% block content %}
+    <h1>{% if object %}Editar Representante: {{ object.get_full_name }}{% else %}Novo Representante{% endif %}</h1>
+    <hr>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Dados de Acesso</h4>
+                {% bootstrap_form form %}
+                <p class="form-text">A senha padrão para novos usuários é 'mudarsenha'.</p>
+            </div>
+            <div class="col-md-6">
+                <h4>Dados Adicionais</h4>
+                {% bootstrap_form profile_form %}
+            </div>
+        </div>
+        <hr>
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{% url 'app:representante-list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+{% endblock %}

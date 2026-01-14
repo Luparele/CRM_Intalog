@@ -1,0 +1,84 @@
+﻿<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Zenith: O ponto mais alto, o auge do sucesso.">Zenith CRM</span>
+      
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'app:home' %}">Dashboard</a>
+          </li>
+          
+          {% if not user.profile.is_financeiro %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'app:agenda' %}">Agenda</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'app:prospeccao' %}">Prospecção</a>
+          </li>
+          {% endif %}
+
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'app:servico-list' %}">Transportes Realizados</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'app:cliente-list' %}">Clientes</a>
+          </li>
+
+          {# --- ALTERAÇÃO AQUI: Bloqueia Financeiro de ver Usuários --- #}
+          {% if not user.profile.is_financeiro %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'app:representante-list' %}">Usuários</a>
+          </li>
+          {% endif %}
+          
+          {# Metas continua liberado (O controle de visualização/edição é feito na View) #}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'app:meta-list' %}">Metas</a>
+          </li>
+
+          {% if user.is_staff or user.profile.tem_acesso_gestao %}
+            <li class="nav-item">
+                <a class="nav-link text-warning" href="{% url 'app:representante-create' %}">
+                    <i class="bi bi-person-plus"></i> Novo Usuário
+                </a>
+            </li>
+          {% endif %}
+
+        </ul>
+        <ul class="navbar-nav ms-auto">
+          
+          {% if user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Olá, {{ user.username }}
+                <span class="badge bg-light text-dark ms-1">{{ user.profile.get_setor_display }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="{% url 'password_change' %}">Alterar Senha</a></li>
+                {% if user.is_staff %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'app:api-documentation' %}"><i class="bi bi-code-square"></i> Documentação da API</a></li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form action="{% url 'logout' %}" method="post" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item">Sair</button>
+                  </form>
+                </li>
+              </ul>
+            </li>
+
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'login' %}">Login</a>
+            </li>
+          {% endif %}
+
+        </ul>
+      </div>
+    </div>
+</nav>

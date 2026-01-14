@@ -1,0 +1,18 @@
+{% load django_bootstrap5 %}
+
+<form hx-post="{% url 'app:editar-prospeccao' prospeccao.id %}"
+      hx-on="htmx:afterRequest: if(event.detail.successful) { location.reload(); }">
+    {% csrf_token %}
+    <div class="modal-header">
+        <h5 class="modal-title">Editar Prospecção: {{ prospeccao.cliente.razao_social }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        {% bootstrap_form form %}
+        <p class="form-text text-muted mt-2">O "Valor Total Estimado" será recalculado automaticamente ao salvar.</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+    </div>
+</form>

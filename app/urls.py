@@ -36,7 +36,7 @@ urlpatterns = [
     path('servicos/<int:pk>/editar/', views.ServicoUpdateView.as_view(), name='servico-update'),
     path('servicos/<int:pk>/editar-modal/', views.ServicoUpdateView.as_view(), name='servico-update-modal'),
     path('servicos/<int:pk>/deletar/', views.ServicoDeleteView.as_view(), name='servico-delete'),
-    path('servicos/historico/<int:pk>/<int:mes>/<int:ano>/', views.servico_historico_modal, name='servico-historico-modal'),
+    path('servicos/historico/<int:cliente_id>/<int:mes>/<int:ano>/', views.servico_historico_modal, name='servico-historico-modal'),
     
     # URLs de API
     path('api/add-tipo-servico/', views.add_tipo_servico_ajax, name='add-tipo-servico'),
@@ -49,8 +49,16 @@ urlpatterns = [
     path('metas/<int:pk>/editar/', views.MetaUpdateView.as_view(), name='meta-update'),
     path('metas/<int:pk>/deletar/', views.MetaDeleteView.as_view(), name='meta-delete'),
 
+
     # URLs para Agenda / Tarefas
     path('agenda/', views.agenda_view, name='agenda'),
+    path('tarefas/', views.tarefas_view, name='tarefas'), # NOVA PAGINA
+    path('tarefas/check-alert/', views.check_tarefas_pendentes, name='check_tarefas_alert'),
+    path('tarefas/marcar-visualizada/<int:pk>/', views.marcar_visualizada, name='marcar-visualizada'),
+    path('tarefas/marcar-todas-visualizadas/', views.marcar_todas_visualizadas, name='marcar_todas_visualizadas'),
+    path('tarefas/<int:pk>/concluir/<str:status>/', views.concluir_tarefa, name='concluir-tarefa'),
+    path('tarefas/criar/', views.criar_tarefa_agendada, name='criar-tarefa-agendada'), # Nova rota
+    path('tarefas/<int:pk>/detalhe/', views.detalhe_tarefa_agendada, name='detalhe-tarefa-agendada'),
     path('agenda/carregar-mais/', views.carregar_mais_tarefas, name='carregar-mais-tarefas'),
     path('tarefa/criar/', views.criar_tarefa, name='criar-tarefa'),
     path('tarefa/<int:pk>/detalhe/', views.detalhe_tarefa, name='detalhe-tarefa'),
@@ -78,6 +86,11 @@ urlpatterns = [
     # URL de Direitos
     path('direitos/', views.direitos_page, name='direitos'),
     
+    # URLs para Gestão de Feriados
+    path('feriados/', views.gerenciar_feriados_modal, name='gerenciar-feriados'),
+    path('feriados/adicionar/', views.adicionar_feriado, name='adicionar-feriado'),
+    path('feriados/deletar/<int:pk>/', views.deletar_feriado, name='deletar-feriado'),
+
     # URL de Documentação da API
     path('api-docs/', views.api_documentation, name='api-documentation'),
 ]

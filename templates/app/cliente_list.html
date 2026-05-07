@@ -7,8 +7,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
         <h1>{% if user.is_staff %}Todos os Clientes{% else %}Meus Clientes{% endif %}</h1>
         
-        {# Botão liberado para todos os setores (incluindo Financeiro) #}
+        {% if user.profile.tem_acesso_gestao %}
         <a href="{% url 'app:cliente-create' %}" class="btn btn-primary mt-2 mt-md-0">Adicionar Novo Cliente</a>
+        {% endif %}
     </div>
 
     {# Filtros apenas para quem vê tudo (Staff, Comercial, Admin, Financeiro) #}
@@ -83,7 +84,7 @@
                                 </a>
                                 
                                 {# 2. Botão Editar (Financeiro agora pode ver) #}
-                                {% if not user.profile.is_financeiro or user.profile.is_financeiro %}
+                                {% if user.profile.tem_acesso_gestao %}
                                     {# A lógica acima é redundante propositalmente para mostrar que "todos veem", mas mantendo a estrutura para você entender onde mudou. Na prática, basta remover o IF ou deixar assim: #}
                                     <a href="{% url 'app:cliente-update' cliente.pk %}" class="btn btn-sm btn-secondary" title="Editar">
                                         <i class="bi bi-pencil"></i>
@@ -91,7 +92,7 @@
                                 {% endif %}
 
                                 {# 3. Botão Excluir (Financeiro NÃO vê, conforme padrão de segurança, apenas Comercial/Admin/Dono) #}
-                                {% if not user.profile.is_financeiro %}
+                                {% if user.profile.tem_acesso_gestao %}
                                     <a href="{% url 'app:cliente-delete' cliente.pk %}" class="btn btn-sm btn-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </a>
@@ -149,6 +150,7 @@
                             </td>
                             <td class="text-end">
                                 {# Botão de Migração: Financeiro PODE ver isso para ativar cliente #}
+                                {% if cliente.status == 'INATIVO' and request.user.profile.setor != 'DIRETORIA' %}
                                 <button class="btn btn-sm btn-success"
                                         hx-get="{% url 'app:promover-prospect-modal' prospect.pk %}"
                                         hx-target="#main-modal-content"
@@ -157,6 +159,9 @@
                                         title="Promover para Carteira de Clientes">
                                     <i class="bi bi-arrow-up-circle-fill me-1"></i> Tornar Ativo
                                 </button>
+                                {% endif %}
+                                
+                                {# Botão Detalhes (Todos veem) #}
                             </td>
                         </tr>
                         {% empty %}

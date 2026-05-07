@@ -9,11 +9,11 @@
     <h1>Painel de Metas e Produção</h1>
     
     {# Regra Atualizada: Apenas Diretoria Comercial e Admin (Gestão) podem lançar #}
-    {% if user.profile.tem_acesso_gestao or user.is_staff %}
-    <a href="{% url 'app:servico-create' %}" class="btn btn-primary mt-2 mt-md-0">
+    {% if user.profile.tem_acesso_gestao %}
+<a href="{% url 'app:servico-create' %}" class="btn btn-primary mt-2 mt-md-0">
         <i class="bi bi-plus-lg"></i> Registrar Novo Serviço
     </a>
-    {% endif %}
+{% endif %}
 </div>
 
 {# --- 1. FILTRO DE MÊS E ANO --- #}
@@ -57,7 +57,7 @@
         <span class="fw-bold">Último lançamento realizado:</span>
         <span class="ms-1">{{ ultimo_lancamento.data_registro|date:"d/m/Y \à\s H:i" }}</span>
         <span class="mx-2">|</span>
-        <span>Responsável: <strong>{{ ultimo_lancamento.fechado_por.get_full_name|default:ultimo_lancamento.fechado_por.username }}</strong></span>
+        
     </div>
     <div class="text-end">
         <small class="text-muted">Cliente: {{ ultimo_lancamento.cliente.razao_social }}</small>

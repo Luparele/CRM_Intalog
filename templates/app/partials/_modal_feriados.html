@@ -1,0 +1,83 @@
+<div id="modal-feriados-container">
+    <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">Feriados - {{ nome_mes }} / {{ ano_selecionado|stringformat:"d" }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body bg-white">
+        
+        {% if success %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                Feriado adicionado com sucesso!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
+
+        <h6 class="mb-3 fw-bold">Adicionar Novo Feriado</h6>
+        <form hx-post="{% url 'app:adicionar-feriado' %}" 
+              hx-target="#main-modal-content" 
+              hx-swap="innerHTML"
+              class="mb-4">
+            {% csrf_token %}
+            <div class="row g-2">
+                <div class="col-md-5">
+                    {{ form.data }}
+                </div>
+                <div class="col-md-5">
+                    {{ form.descricao }}
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100" title="Salvar Feriado">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <hr>
+
+        <h6 class="mb-3 fw-bold">Feriados Cadastrados no Mês</h6>
+        <div id="lista-feriados">
+            <table class="table table-sm table-hover border">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-2">Data</th>
+                        <th>Descrição</th>
+                        <th class="text-end pe-2">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feriado in feriados %}
+                        <tr class="align-middle">
+                            <td class="ps-2">{{ feriado.data|date:"d/m/Y" }}</td>
+                            <td>{{ feriado.descricao }}</td>
+                            <td class="text-end pe-2">
+                                <button class="btn btn-outline-danger btn-sm border-0"
+                                        hx-delete="{% url 'app:deletar-feriado' feriado.pk %}"
+                                        hx-target="#main-modal-content"
+                                        hx-swap="innerHTML"
+                                        hx-confirm="Deseja realmente remover o feriado do dia {{ feriado.data|date:'d/m' }}?">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">
+                                <i class="bi bi-calendar-x d-block fs-4 mb-2"></i>
+                                Nenhum feriado cadastrado para este mês.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="alert alert-info border-0 shadow-sm small mt-3 mb-0">
+            <i class="bi bi-info-circle-fill me-1"></i> 
+            <strong>Dica:</strong> Sábados e Domingos são excluídos automaticamente da contagem de dias úteis no dashboard.
+        </div>
+    </div>
+    <div class="modal-footer bg-white">
+        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Fechar</button>
+    </div>
+</div>

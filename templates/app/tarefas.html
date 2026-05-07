@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load static %}
+
+{% block title %}Tarefas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-calendar-check"></i> Tarefas</h1>
+    <div>
+        <button class="btn btn-primary" hx-get="{% url 'app:criar-tarefa-agendada' %}" hx-target="#main-modal-content"
+            data-bs-toggle="modal" data-bs-target="#main-modal">
+            <i class="bi bi-plus-lg"></i> Nova Tarefa
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- CALENDÁRIO (Coluna Esquerda) -->
+    <div class="col-md-5 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <a href="?mes={{ mes_anterior }}&ano={{ ano_anterior|stringformat:'d' }}"
+                    class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <h5 class="mb-0 text-capitalize">{{ mes_nome }} {{ ano_atual|stringformat:'d' }}</h5>
+                <a href="?mes={{ mes_proximo }}&ano={{ ano_proximo|stringformat:'d' }}"
+                    class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+            <div class="card-body p-2">
+                <!-- Grid do Calendário -->
+                <div class="row text-center fw-bold mb-2">
+                    <div class="col">Dom</div>
+                    <div class="col">Seg</div>
+                    <div class="col">Ter</div>
+                    <div class="col">Qua</div>
+                    <div class="col">Qui</div>
+                    <div class="col">Sex</div>
+                    <div class="col">Sáb</div>
+                </div>
+
+                <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                    {# Dias Vazios (preenchimento inicio mes) #}
+                    {% for i in dias_vazios_inicio %}
+                    <div class="p-2"></div>
+                    {% endfor %}
+
+                    {# Dias do Mês #}
+                    {# Dias do Mês #}
+                    {% for item in dias_do_mes %}
+                    {% with dia=item.date statuses=item.statuses %}
+                    {% with dia_str=dia|date:"Y-m-d" %}
+                    <a href="?dia={{ dia_str }}"
+                        class="btn p-2 position-relative border-0 rounded-3 w-100 {% if dia_str == dia_selecionado_str %}bg-primary text-white{% else %}bg-light text-dark hover-bg-gray{% endif %}"
+                        style="height: 60px; display: flex; flex-direction: column; justify-content: start; align-items: center;">
+                        <span>{{ dia.day }}</span>
+
+                        {# Indicadores de Tarefas #}
+                        {% if statuses %}
+                        <div class="position-absolute"
+                            style="bottom: 2px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px;">
+                            {% if 'REALIZADA' in statuses %}
+                            <span class="rounded-circle bg-success d-flex justify-content-center align-items-center"
+                                style="width: 14px; height: 14px;" title="Concluída">
+                                <i class="bi bi-check text-white" style="font-size: 0.8rem; line-height: 0;"></i>
+                            </span>
+                            {% endif %}
+                            {% if 'PENDENTE' in statuses %}
+                            <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 0.8rem;"
+                                title="Pendente"></i>
+                            {% endif %}
+                            {% if 'NAO_REALIZADA' in statuses %}
+                            <span class="rounded-circle bg-danger d-flex justify-content-center align-items-center"
+                                style="width: 14px; height: 14px;" title="Não Realizada">
+                                <i class="bi bi-x text-white" style="font-size: 0.8rem; line-height: 0;"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </a>
+                    {% endwith %}
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIMELINE (Coluna Direita) -->
+    <div class="col-md-7">
+        <div class="card h-100 shadow-sm border-0 bg-transparent">
+            <div class="card-header bg-transparent border-0 ps-0">
+                <h5 class="mb-0">Agenda de {{ dia_selecionado_formatado }}</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if tarefas_do_dia %}
+                <div class="timeline position-relative">
+                    {% for tarefa in tarefas_do_dia %}
+                    <div
+                        class="card mb-3 border-start border-4 {% if tarefa.status == 'FINALIZADA' %}border-success{% elif tarefa.status == 'INICIADA' %}border-warning{% else %}border-primary{% endif %} shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title fw-bold mb-0">
+                                    {{ tarefa.titulo }}
+                                    {% if not tarefa.visualizada_em and tarefa.atribuido_a == user %}
+                                    <span class="badge bg-danger ms-2">Novo</span>
+                                    {% endif %}
+                                </h6>
+                                <span
+                                    class="badge {% if tarefa.status == 'FINALIZADA' %}bg-success{% elif tarefa.status == 'INICIADA' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ tarefa.get_status_display }}
+                                </span>
+                            </div>
+                            <p class="card-text text-muted small mb-2">{{ tarefa.descricao|truncatechars:100 }}</p>
+
+                            <!-- 
+                                FIX: Usar tarefa.get_responsavel_nome() do model em vez de template tags complexas.
+                                Evita erros de parsing do Django em tags multilinhas.
+                            -->
+                            <div class="d-flex justify-content-between align-items-center small text-muted">
+                                <div>
+                                    <i class="bi bi-person"></i> {{ tarefa.get_responsavel_nome }}
+                                </div>
+                                <div class="d-flex align-items-center gap-1">
+                                    {% if tarefa.status != 'REALIZADA' and tarefa.status != 'NAO_REALIZADA' %}
+                                    <button class="btn btn-sm btn-success"
+                                        hx-post="{% url 'app:concluir-tarefa' pk=tarefa.pk status='REALIZADA' %}"
+                                        hx-swap="none" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                        hx-on="htmx:afterRequest: location.reload()">
+                                        <i class="bi bi-check-lg"></i> Realizado
+                                    </button>
+                                    <button class="btn btn-sm btn-danger"
+                                        hx-post="{% url 'app:concluir-tarefa' pk=tarefa.pk status='NAO_REALIZADA' %}"
+                                        hx-swap="none" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                        hx-on="htmx:afterRequest: location.reload()">
+                                        <i class="bi bi-x-lg"></i> Não Real.
+                                    </button>
+                                    {% endif %}
+
+                                    <button class="btn btn-sm btn-outline-primary"
+                                        hx-get="{% url 'app:detalhe-tarefa-agendada' pk=tarefa.pk %}"
+                                        hx-target="#main-modal-content" data-bs-toggle="modal"
+                                        data-bs-target="#main-modal">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-light text-center py-5">
+                    <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                    <p class="mt-3 text-muted">Nenhuma tarefa agendada para este dia.</p>
+                    <button class="btn btn-primary btn-sm mt-2" hx-get="{% url 'app:criar-tarefa-agendada' %}"
+                        hx-target="#main-modal-content" data-bs-toggle="modal" data-bs-target="#main-modal">
+                        Agendar Tarefa
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-bg-gray:hover {
+        background-color: #e9ecef !important;
+    }
+</style>
+{% endblock %}

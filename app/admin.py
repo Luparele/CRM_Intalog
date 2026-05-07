@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from .models import (
     Profile, Cliente, ClienteProspect, Servico, TipoServico, Meta, 
-    Tarefa, AcaoTarefa, Prospeccao, AcaoProspeccao
+    Tarefa, AcaoTarefa, Prospeccao, AcaoProspeccao, TarefaAgendada
 )
 
 class ProfileInline(admin.StackedInline):
@@ -122,3 +122,22 @@ class AcaoProspeccaoAdmin(admin.ModelAdmin):
     list_display = ('prospeccao', 'registrado_por', 'data_registro')
     list_filter = ('registrado_por', 'data_registro')
     search_fields = ('descricao', 'prospeccao__cliente__razao_social')
+
+@admin.register(TarefaAgendada)
+class TarefaAgendadaAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'status', 'data_agendamento', 'atribuido_a', 'criado_por', 'visualizada_em')
+    list_filter = ('status', 'data_agendamento', 'atribuido_a', 'criado_por')
+    search_fields = ('titulo', 'descricao', 'atribuido_a__username')
+    readonly_fields = ('data_criacao', 'visualizada_em', 'data_finalizacao', 'finalizado_por')
+    
+    fieldsets = (
+        ('Detalhes da Tarefa', {
+            'fields': ('titulo', 'descricao', 'status', 'data_agendamento')
+        }),
+        ('Participantes', {
+            'fields': ('atribuido_a', 'criado_por')
+        }),
+        ('Status e Datas', {
+            'fields': ('visualizada_em', 'data_criacao', 'finalizado_por', 'data_finalizacao')
+        }),
+    )

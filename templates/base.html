@@ -33,13 +33,24 @@
             overflow-x: hidden;
         }
 
-        /* Garante que a navbar cole no topo absoluto */
-        .navbar {
-            margin-top: 0 !important;
-            top: 0 !important;
+        /* CRITICAL: Remove qualquer espaco antes da navbar */
+        body {
+            padding-top: 0 !important;
         }
         
-        /* Remove margem do container principal para ele não empurrar nada */
+        body > nav:first-child,
+        body > *:first-child {
+            margin-top: 0 !important;
+        }
+
+        /* Garante que a navbar cole no topo absoluto */
+        .navbar {
+            margin: 0 !important;
+            top: 0 !important;
+            position: relative;
+        }
+        
+        /* Remove margem do container principal para ele nao empurrar nada */
         main.container {
             margin-top: 1.5rem;
         }

@@ -1,6 +1,6 @@
 {% load humanize %}
 
-<div id="bloco-mensal">
+<div id="bloco-mensal" hx-get="{% url 'app:get-dash-mensal' %}" hx-trigger="update-dashboard-mensal from:body" hx-include="closest #bloco-mensal" hx-target="this" hx-swap="outerHTML">
     {# Este elemento invisível vai carregar os dados do Django para o JavaScript #}
     <div id="mensal-js-data" data-is-staff="{{ user.is_staff|yesno:'true,false' }}" style="display: none;"></div>
 
@@ -11,14 +11,14 @@
             <div class="col-auto">
                 <select name="mes_mensal" class="form-select form-select-sm">
                     {% for num, nome in meses_disponiveis %}
-                        <option value="{{ num }}" {% if num == mes_mensal_selecionado %}selected{% endif %}>{{ nome }}</option>
+                        <option value="{{ num|stringformat:'d' }}" {% if num == mes_mensal_selecionado %}selected{% endif %}>{{ nome }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-auto">
                 <select name="ano_mensal" class="form-select form-select-sm">
                     {% for ano in anos_disponiveis %}
-                        <option value="{{ ano }}" {% if ano == ano_mensal_selecionado %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
+                        <option value="{{ ano|stringformat:'d' }}" {% if ano == ano_mensal_selecionado %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -31,6 +31,20 @@
                     Filtrar
                 </button>
             </div>
+            {% if user.profile.tem_acesso_gestao %}
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary btn-sm"
+                        title="Configurar Dias Úteis / Feriados"
+                        hx-get="{% url 'app:gerenciar-feriados' %}?mes={{ mes_mensal_selecionado|stringformat:'d' }}&ano={{ ano_mensal_selecionado|stringformat:'d' }}"
+                        hx-target="#main-modal-content"
+                        hx-swap="innerHTML"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#main-modal"
+                        data-bs-backdrop="static">
+                    <i class="bi bi-calendar-event"></i> Feriados
+                </button>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -69,14 +83,51 @@
                     {{ mensal_percentual_meta|floatformat:1 }}%
                 </strong>
             </div>
-            <div class="row text-center mt-3">
-                <div class="col-md-6">
-                    <div class="text-muted">Faltam para a meta</div>
-                    <div class="fs-5 fw-bold">R$ {{ mensal_faturamento_faltante|floatformat:2|intcomma }}</div>
+            <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mt-3">
+                <div class="text-center px-3">
+                    <div class="text-muted small">Média realizada</div>
+                    <div class="fs-6 fw-bold text-success">R$ {{ mensal_media_faturamento_diario|floatformat:2|intcomma }}</div>
                 </div>
-                <div class="col-md-6">
-                    <div class="text-muted">Dias restantes no mês</div>
-                    <div class="fs-5 fw-bold">{{ mensal_dias_restantes }} dia{{ mensal_dias_restantes|pluralize }}</div>
+
+                <div class="vr d-none d-md-block" style="height: 40px; align-self: center;"></div>
+
+                <div class="text-center px-3">
+                    <div class="text-muted small">Faltam para a meta</div>
+                    <div class="fs-6 fw-bold text-danger">R$ {{ mensal_faturamento_faltante|floatformat:2|intcomma }}</div>
+                </div>
+                
+                <div class="vr d-none d-md-block" style="height: 40px; align-self: center;"></div>
+                
+                <div class="text-center px-3">
+                    <div class="text-muted small">Dias úteis restantes</div>
+                    <div class="fs-6 fw-bold">{{ mensal_dias_restantes }} dia{{ mensal_dias_restantes|pluralize }}</div>
+                </div>
+
+                <div class="vr d-none d-md-block" style="height: 40px; align-self: center;"></div>
+
+                <div class="text-center px-3">
+                    <div class="text-muted small">Diário necessário</div>
+                    <div class="fs-6 fw-bold text-primary">R$ {{ mensal_faturamento_diario_necessario|floatformat:2|intcomma }}</div>
+                </div>
+
+                <div class="vr d-none d-md-block" style="height: 40px; align-self: center;"></div>
+
+                <div class="text-center px-3">
+                    <div class="text-muted small">Previsão Real</div>
+                    <div class="fs-6 fw-bold text-info">
+                        R$ {{ mensal_previsao_real|floatformat:2|intcomma }}
+                        {% if mensal_meta %}
+                            {% if mensal_previsao_real < mensal_meta.valor %}
+                                <span class="text-danger ms-1" style="font-size: 0.85rem;" title="Atenção: Projeção abaixo da meta">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> <small class="fw-normal">Abaixo da Meta!</small>
+                                </span>
+                            {% else %}
+                                <span class="text-success ms-1" style="font-size: 0.85rem;" title="Parabéns: Projeção atinge a meta">
+                                    <i class="bi bi-check-circle-fill"></i> <small class="fw-normal">Meta no Alvo!</small>
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             

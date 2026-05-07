@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = '5f=cb11jx+s0c2&!&mua57y%s830w#m%gle11ibs-@($s)1938'
 DEBUG = True
-ALLOWED_HOSTS = ['CRMTransbirday.pythonanywhere.com', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = ['CRMintalog.pythonanywhere.com', '127.0.0.1', 'testserver']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'app',
     'django_bootstrap5',
     'django.contrib.humanize',
+    'django_htmx',
 ]
 
 MIDDLEWARE = [
@@ -40,6 +41,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
 ]
 
 ROOT_URLCONF = 'CRM_Comercial.urls'
@@ -98,7 +100,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 
 # Redireciona para a home do nosso app após o login
-LOGIN_REDIRECT_URL = 'app:home' 
+LOGIN_REDIRECT_URL = 'app:home'
 
 # Redireciona para a página de login após o logout
 LOGOUT_REDIRECT_URL = 'login'

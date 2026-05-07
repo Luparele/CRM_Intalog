@@ -1,4 +1,4 @@
-<h6>Ações Registradas:</h6>
+﻿<h6>Acoes Registradas:</h6>
 <ul class="list-unstyled">
     {% for acao in prospeccao.acoes.all %}
     <li class="mb-2">
@@ -11,9 +11,9 @@
                 </a>
             {% endif %}
         </p>
-        <small class="text-muted">- por {{ acao.registrado_por.username }} em {{ acao.data_registro|date:"d/m/Y" }} às {{ acao.data_registro|time:"H:i" }}</small>
+        <small class="text-muted">- por {{ acao.registrado_por.username }} em {{ acao.data_hora|date:"d/m/Y" }} as {{ acao.data_hora|time:"H:i" }}</small>
     </li>
     {% empty %}
-    <p class="text-muted">Nenhuma ação registrada ainda.</p>
+    <p class="text-muted">Nenhuma acao registrada ainda.</p>
     {% endfor %}
 </ul>

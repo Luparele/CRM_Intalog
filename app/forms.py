@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Profile, Cliente, ClienteProspect, Servico, Meta, Tarefa, AcaoTarefa, Prospeccao, AcaoProspeccao
+from .models import Profile, Cliente, ClienteProspect, Servico, Meta, Tarefa, AcaoTarefa, Prospeccao, AcaoProspeccao, TarefaAgendada, Feriado
 from django.contrib.auth.forms import AuthenticationForm
 from decimal import Decimal
 import calendar
@@ -58,11 +58,13 @@ class ClienteForm(forms.ModelForm):
             else:
                 self.fields['cadastrado_por'].required = True
 
+
 class ClienteProspectForm(forms.ModelForm):
     class Meta:
         model = ClienteProspect
         fields = ['cnpj', 'razao_social', 'nome_contato', 'telefone_contato', 'email_contato']
         widgets = {
+            'cnpj': forms.TextInput(attrs={'hx-get': '/app/api/consultar-cnpj/', 'hx-trigger': 'blur', 'hx-target': '#id_razao_social', 'hx-swap': 'outerHTML', 'placeholder': '00.000.000/0000-00'}),
             'email_contato': forms.EmailInput(attrs={'placeholder': 'exemplo@email.com'}),
         }
 
@@ -70,7 +72,6 @@ class ServicoForm(forms.ModelForm):
     class Meta:
         model = Servico
         fields = ['cliente', 'tipo_servico', 'data_servico', 'quantidade', 'valor']
-        
         widgets = {
             'data_servico': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
             'tipo_servico': forms.Select(attrs={'class': 'form-select'}),
@@ -107,9 +108,30 @@ class CustomAuthenticationForm(AuthenticationForm):
             )
 
 class TarefaForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        # Configura campo de data
+        self.fields['data_agendamento'].widget = forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+
+        # Logica de Delegação
+        if user:
+            # Setores que podem delegar: ADMIN, COMERCIAL, DIRETORIA
+            pode_delegar = False
+            if user.is_staff or (hasattr(user, 'profile') and user.profile.setor in ['ADMIN', 'COMERCIAL', 'DIRETORIA']):
+                pode_delegar = True
+            
+            if pode_delegar:
+                self.fields['atribuido_a'].queryset = User.objects.filter(is_active=True).order_by('first_name')
+                self.fields['atribuido_a'].widget.attrs.update({'class': 'form-select'})
+            else:
+                self.fields.pop('atribuido_a')
+
+
     class Meta:
         model = Tarefa
-        fields = ['titulo', 'descricao']
+        fields = ['titulo', 'descricao', 'data_agendamento', 'atribuido_a']
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4}),
         }
@@ -127,6 +149,34 @@ class AcaoTarefaForm(forms.ModelForm):
             'arquivo': forms.FileInput(attrs={'class': 'form-control form-control-sm'})
         }
 
+class TarefaAgendadaForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        self.fields['data_agendamento'].widget = forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        
+        # Logica de Delegação
+        if user:
+            # Setores que podem delegar: ADMIN, COMERCIAL, DIRETORIA
+            pode_delegar = False
+            if user.is_staff or (hasattr(user, 'profile') and user.profile.setor in ['ADMIN', 'COMERCIAL', 'DIRETORIA']):
+                pode_delegar = True
+            
+            if pode_delegar:
+                self.fields['atribuido_a'].queryset = User.objects.filter(is_active=True).order_by('first_name')
+                self.fields['atribuido_a'].widget.attrs.update({'class': 'form-select'})
+            else:
+                self.fields.pop('atribuido_a')
+
+    class Meta:
+        model = TarefaAgendada
+        fields = ['titulo', 'descricao', 'data_agendamento', 'atribuido_a']
+        widgets = {
+            'descricao': forms.Textarea(attrs={'rows': 4}),
+            'titulo': forms.TextInput(attrs={'placeholder': 'Título da Tarefa'}),
+        }
+
 class ProspectChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.razao_social} ({obj.cnpj or 'S/ CNPJ'})"
@@ -140,11 +190,12 @@ class ProspeccaoForm(forms.ModelForm):
     class Meta:
         model = Prospeccao
         fields = [
-            'cliente', 'tipo_servico', 'duracao_meses', 
-            'viagens_aproximadas', 'valor_medio_viagem'
+            'cliente', 'tipo_proposta', 'tipo_servico', 'duracao_meses', 
+            'viagens_aproximadas', 'valor_medio_viagem', 'atribuido_a'
         ]
         widgets = {
             'tipo_servico': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_proposta': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -157,8 +208,21 @@ class ProspeccaoForm(forms.ModelForm):
             # --- ALTERAÇÃO: COMERCIAL e ADMIN veem todos prospects ---
             if user.is_staff or user.profile.tem_acesso_gestao:
                 self.fields['cliente'].queryset = prospects_queryset
+                
+                # --- NOVA FUNCIONALIDADE: DELEGAR PROSPECÇÃO ---
+                # Apenas para Gestão/Admin
+                self.fields['atribuido_a'] = forms.ModelChoiceField(
+                    queryset=User.objects.filter(is_active=True, profile__setor='REPRESENTANTE').order_by('first_name'),
+                    required=False,
+                    label="Responsável (Delegar para)",
+                    help_text="Deixe em branco para assumir esta prospecção."
+                )
+                self.fields['atribuido_a'].widget.attrs.update({'class': 'form-select'})
             else:
                 self.fields['cliente'].queryset = prospects_queryset.filter(cadastrado_por=user)
+                # No ProspeccaoForm, se não for gestão, removemos o campo para não confundir
+                if 'atribuido_a' in self.fields:
+                    del self.fields['atribuido_a']
 
     def clean(self):
         cleaned_data = super().clean()
@@ -190,14 +254,28 @@ class AcaoProspeccaoForm(forms.ModelForm):
         }
 
 class ProspeccaoEditForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        if user and (user.is_staff or user.profile.tem_acesso_gestao):
+            self.fields['atribuido_a'] = forms.ModelChoiceField(
+                queryset=User.objects.filter(is_active=True, profile__setor='REPRESENTANTE').order_by('first_name'),
+                required=False,
+                label="Responsável (Delegar para)",
+                initial=self.instance.atribuido_a or self.instance.criado_por
+            )
+            self.fields['atribuido_a'].widget.attrs.update({'class': 'form-select'})
+
     class Meta:
         model = Prospeccao
         fields = [
-            'tipo_servico', 'duracao_meses', 
-            'viagens_aproximadas', 'valor_medio_viagem'
+            'tipo_proposta', 'tipo_servico', 'duracao_meses', 
+            'viagens_aproximadas', 'valor_medio_viagem', 'atribuido_a'
         ]
         widgets = {
             'tipo_servico': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_proposta': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def clean(self):
@@ -215,3 +293,12 @@ class ProspeccaoEditForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+class FeriadoForm(forms.ModelForm):
+    class Meta:
+        model = Feriado
+        fields = ['data', 'descricao']
+        widgets = {
+            'data': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Sexta-feira Santa'}),
+        }

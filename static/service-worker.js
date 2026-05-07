@@ -77,20 +77,47 @@ self.addEventListener('sync', (event) => {
 });
 
 self.addEventListener('push', (event) => {
+  let data = { title: 'CRM - INTALOG', body: 'Nova atualização disponível!' };
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
   const options = {
-    body: event.data ? event.data.text() : 'Nova atualização disponível!',
-    icon: '/static/icons/icon-192x192.png',
-    badge: '/static/icons/icon-72x72.png',
+    body: data.body,
+    icon: data.icon || '/static/icons/icon-192x192.png',
+    badge: data.badge || '/static/icons/icon-72x72.png',
     vibrate: [200, 100, 200],
-    tag: 'crm-intalog-notification',
+    tag: data.tag || 'crm-intalog-notification',
     requireInteraction: true,
+    data: { url: data.url || '/' }
   };
+
   event.waitUntil(
-    self.registration.showNotification('CRM - INTALOG', options)
+    self.registration.showNotification(data.title, options)
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow('/'));
+  const url = event.notification.data ? (event.notification.data.url || '/') : '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((windowClients) => {
+      // Tenta focar em uma aba já aberta
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Se não achar, abre uma nova
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
 });

@@ -20,8 +20,12 @@ from django.contrib.auth import views as auth_views
 from app import views as app_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 
 urlpatterns = [
+    # Service Worker na raiz (necessário para PWA)
+    path('serviceworker.js', TemplateView.as_view(template_name="service-worker.js", content_type='application/javascript'), name='serviceworker'),
+    
     path('admin/', admin.site.urls),
     
     # API REST com documentação Swagger (DESCOMENTE APÓS INSTALAR DEPENDÊNCIAS)
@@ -29,6 +33,7 @@ urlpatterns = [
     
     # Inclui as rotas do nosso app principal
     path('', include('app.urls')),
+    path('webpush/', include('webpush.urls')),
     
     # --- Rotas de Autenticação ---
     path('login/', app_views.custom_login_view, name='login'),

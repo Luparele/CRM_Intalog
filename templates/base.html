@@ -96,7 +96,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/service-worker.js')
+                navigator.serviceWorker.register('/serviceworker.js')
                     .then((registration) => {
                         console.log('Service Worker registrado com sucesso:', registration.scope);
                         
@@ -129,6 +129,11 @@
             deferredPrompt = null;
         });
     </script>
+
+    <script>
+        window.WEBPUSH_PUBLIC_KEY = "{{ WEBPUSH_PUBLIC_KEY }}";
+    </script>
+    <script src="{% static 'app/js/notifications.js' %}"></script>
 
     {% block javascript %}{% endblock %}
 </body>

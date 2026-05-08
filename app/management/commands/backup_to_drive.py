@@ -23,8 +23,8 @@ class Command(BaseCommand):
 
         # Configurações
         BASE_DIR = settings.BASE_DIR
-        DATE_STR = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        BACKUP_FILENAME = f"backup_crm_{DATE_STR}.tar.gz"
+        DATE_STR = datetime.datetime.now().strftime('%d-%m-%Y_as_%H-%M')
+        BACKUP_FILENAME = f"CRM_Intalog_{DATE_STR}.tar.gz"
         # Configurações de Credenciais
         TOKEN_FILE = os.path.join(BASE_DIR, 'token.json')
         CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, 'client_secrets.json')

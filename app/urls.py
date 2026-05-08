@@ -93,4 +93,7 @@ urlpatterns = [
 
     # URL de Documentação da API
     path('api-docs/', views.api_documentation, name='api-documentation'),
+
+    # URL para Backup Manual (Superuser)
+    path('backup/manual/', views.manual_backup, name='manual-backup'),
 ]

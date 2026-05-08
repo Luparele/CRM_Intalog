@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.management import call_command
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy, reverse
 from django.middleware.csrf import get_token
@@ -2350,3 +2352,22 @@ def deletar_feriado(request, pk):
     response = render(request, 'app/partials/_modal_feriados.html', context)
     response['HX-Trigger'] = 'update-dashboard-mensal'
     return response
+
+@login_required
+def manual_backup(request):
+    """
+    Dispara o comando de backup para o Google Drive manualmente.
+    Apenas para superusuários.
+    """
+    if not request.user.is_superuser:
+        return HttpResponse("Acesso negado.", status=403)
+
+    try:
+        # Chama o comando de backup que criamos
+        call_command('backup_to_drive')
+        messages.success(request, "Backup realizado com sucesso e enviado ao Google Drive!")
+    except Exception as e:
+        messages.error(request, f"Erro ao realizar backup: {str(e)}")
+
+    # Redireciona de volta para onde o usuário estava
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

@@ -96,4 +96,7 @@ urlpatterns = [
 
     # URL para Backup Manual (Superuser)
     path('backup/manual/', views.manual_backup, name='manual-backup'),
+
+    # URL para servir arquivos do Google Drive (Mídia)
+    path('media-drive/<path:path>', views.serve_drive_file, name='serve-drive-file'),
 ]

@@ -1,7 +1,12 @@
+import os
+import io
+import mimetypes
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, HttpResponseRedirect, FileResponse, Http404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.management import call_command
+from .utils import get_drive_service
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy, reverse
 from django.middleware.csrf import get_token
@@ -2371,3 +2376,41 @@ def manual_backup(request):
     except Exception as e:
         messages.error(request, f"Erro ao realizar backup: {str(e)}")
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+@login_required
+def serve_drive_file(request, path):
+    """
+    View de Proxy que busca o arquivo no Google Drive e entrega ao usuário.
+    """
+    from .storage import GoogleDriveStorage
+    from googleapiclient.http import MediaIoBaseDownload
+    storage = GoogleDriveStorage()
+    
+    try:
+        file_id = storage._get_file_id(path)
+        if not file_id:
+            raise Http404("Arquivo não encontrado no Google Drive.")
+
+        # Obtém metadados para saber o MimeType e o nome original
+        service = storage.service
+        file_meta = service.files().get(fileId=file_id, fields='name, mimeType').execute()
+        
+        # Download do conteúdo
+        drive_request = service.files().get_media(fileId=file_id)
+        file_io = io.BytesIO()
+        downloader = MediaIoBaseDownload(file_io, drive_request)
+        
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+        
+        file_io.seek(0)
+        
+        # Retorna o arquivo como resposta
+        response = HttpResponse(file_io.read(), content_type=file_meta.get('mimeType'))
+        response['Content-Disposition'] = f'inline; filename="{file_meta.get("name")}"'
+        return response
+
+    except Exception as e:
+        print(f"Erro ao servir arquivo do Drive: {e}")
+        raise Http404("Erro ao processar o arquivo.")

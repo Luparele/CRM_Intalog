@@ -5,7 +5,8 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 
 try:
-    from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
     GOOGLE_LIBS_INSTALLED = True
@@ -24,18 +25,37 @@ class Command(BaseCommand):
         BASE_DIR = settings.BASE_DIR
         DATE_STR = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         BACKUP_FILENAME = f"backup_crm_{DATE_STR}.tar.gz"
-        CREDENTIALS_FILE = os.path.join(BASE_DIR, 'google_credentials.json')
-        
-        # Tenta pegar da settings, se não existir usa placeholder
+        # Configurações de Credenciais
+        TOKEN_FILE = os.path.join(BASE_DIR, 'token.json')
+        CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, 'client_secrets.json')
         FOLDER_ID = getattr(settings, 'GOOGLE_DRIVE_BACKUP_FOLDER_ID', None)
 
-        if not os.path.exists(CREDENTIALS_FILE):
-            self.stdout.write(self.style.ERROR(f"ERRO: Arquivo de credenciais não encontrado em: {CREDENTIALS_FILE}"))
-            self.stdout.write(self.style.WARNING("Certifique-se de subir o arquivo 'google_credentials.json' para a raiz do projeto no servidor."))
+        if not os.path.exists(TOKEN_FILE):
+            self.stdout.write(self.style.ERROR(f"ERRO: Arquivo 'token.json' não encontrado em: {TOKEN_FILE}"))
             return
 
         if not FOLDER_ID:
             self.stdout.write(self.style.ERROR("ERRO: GOOGLE_DRIVE_BACKUP_FOLDER_ID não configurado no settings.py"))
+            return
+
+        # Autenticação OAuth2
+        creds = None
+        try:
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, scopes=['https://www.googleapis.com/auth/drive.file'])
+            
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    self.stdout.write("Token expirado. Tentando renovar...")
+                    creds.refresh(Request())
+                    # Salva o token renovado
+                    with open(TOKEN_FILE, 'w') as token:
+                        token.write(creds.to_json())
+                    self.stdout.write(self.style.SUCCESS("Token renovado com sucesso!"))
+                else:
+                    self.stdout.write(self.style.ERROR("Token inválido ou sem permissão de renovação."))
+                    return
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Erro na autenticação: {e}"))
             return
 
         # 1. Criar o Backup (Compactar)
@@ -49,7 +69,7 @@ class Command(BaseCommand):
             
             with tarfile.open(BACKUP_FILENAME, "w:gz") as tar:
                 for item in os.listdir(BASE_DIR):
-                    if item in ignore_list or item == BACKUP_FILENAME or item == 'google_credentials.json':
+                    if item in ignore_list or item == BACKUP_FILENAME or item in ['token.json', 'client_secrets.json', 'google_credentials.json']:
                         continue
                     
                     item_path = os.path.join(BASE_DIR, item)
@@ -65,10 +85,6 @@ class Command(BaseCommand):
         try:
             self.stdout.write(f"Iniciando upload para o Google Drive (Pasta: {FOLDER_ID})...")
             
-            creds = service_account.Credentials.from_service_account_file(
-                CREDENTIALS_FILE, 
-                scopes=['https://www.googleapis.com/auth/drive.file']
-            )
             service = build('drive', 'v3', credentials=creds)
 
             file_metadata = {

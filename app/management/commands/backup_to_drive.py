@@ -84,7 +84,8 @@ class Command(BaseCommand):
             file = service.files().create(
                 body=file_metadata,
                 media_body=media,
-                fields='id'
+                fields='id',
+                supportsAllDrives=True
             ).execute()
 
             self.stdout.write(self.style.SUCCESS(f"Backup enviado com sucesso! Google Drive File ID: {file.get('id')}"))

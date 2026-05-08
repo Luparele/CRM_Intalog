@@ -251,5 +251,5 @@ WEBPUSH_SETTINGS = {
 
 # --- CONFIGURAÇÕES DE BACKUP (Google Drive) ---
 # Substitua pelo ID da pasta do Google Drive onde os backups serão salvos
-GOOGLE_DRIVE_BACKUP_FOLDER_ID = 'SUA_ID_DA_PASTA_AQUI'
+GOOGLE_DRIVE_BACKUP_FOLDER_ID = '1yMyVjyxdVE5s0AXwdlZvN5L5z5kxcqe_'
 

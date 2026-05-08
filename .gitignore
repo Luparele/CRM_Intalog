@@ -12,3 +12,5 @@ static_root/
 *.bak
 app/views.py_*
 Backup/
+google_credentials.json
+backup_crm_*.tar.gz

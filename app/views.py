@@ -2365,9 +2365,9 @@ def manual_backup(request):
     try:
         # Chama o comando de backup que criamos
         call_command('backup_to_drive')
-        messages.success(request, "Backup realizado com sucesso e enviado ao Google Drive!")
+        messages.success(request, "Backup realizado com sucesso!")
+        # Redireciona para a pasta do Google Drive
+        return redirect('https://drive.google.com/drive/folders/1yMyVjyxdVE5s0AXwdlZvN5L5z5kxcqe_')
     except Exception as e:
         messages.error(request, f"Erro ao realizar backup: {str(e)}")
-
-    # Redireciona de volta para onde o usuário estava
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

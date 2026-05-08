@@ -249,3 +249,7 @@ WEBPUSH_SETTINGS = {
     "VAPID_ADMIN_EMAIL": "eduardo.luparele@gmail.com",
 }
 
+# --- CONFIGURAÇÕES DE BACKUP (Google Drive) ---
+# Substitua pelo ID da pasta do Google Drive onde os backups serão salvos
+GOOGLE_DRIVE_BACKUP_FOLDER_ID = 'SUA_ID_DA_PASTA_AQUI'
+

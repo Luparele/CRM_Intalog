@@ -254,6 +254,13 @@ WEBPUSH_SETTINGS = {
 GOOGLE_DRIVE_BACKUP_FOLDER_ID = '1yMyVjyxdVE5s0AXwdlZvN5L5z5kxcqe_'
 GOOGLE_DRIVE_MEDIA_FOLDER_ID = '19z3h4z2rCmd_2Oqf5EniUT_Uh5d0OzIj'
 
-# Custom Storage para Google Drive (Mídia)
-DEFAULT_FILE_STORAGE = 'app.storage.GoogleDriveStorage'
+# Configurações de Armazenamento (STORAGES) para Django 5.x
+STORAGES = {
+    "default": {
+        "BACKEND": "app.storage.GoogleDriveStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 

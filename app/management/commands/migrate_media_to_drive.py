@@ -9,9 +9,10 @@ class Command(BaseCommand):
     help = 'Migra os arquivos da pasta /media/ local para o Google Drive'
 
     def handle(self, *args, **options):
-        # Verifica se o storage atual é o do Google Drive
-        if not isinstance(default_storage, GoogleDriveStorage):
-            self.stdout.write(self.style.ERROR("O storage padrão não é GoogleDriveStorage. Verifique seu settings.py"))
+        # Verifica se o storage atual é o do Google Drive (pelo nome da classe)
+        storage_class = default_storage.__class__.__name__
+        if 'GoogleDriveStorage' not in storage_class:
+            self.stdout.write(self.style.ERROR(f"O storage atual é '{storage_class}', mas deveria ser 'GoogleDriveStorage'. Verifique seu settings.py"))
             return
 
         MEDIA_ROOT = settings.MEDIA_ROOT

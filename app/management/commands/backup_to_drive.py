@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 
 from googleapiclient.http import MediaFileUpload
-from .utils import get_drive_service
+from app.utils import get_drive_service
 
 class Command(BaseCommand):
     help = 'Cria um backup compactado do projeto (excluindo venv) e envia para o Google Drive'

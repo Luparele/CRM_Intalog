@@ -363,10 +363,10 @@ class Prospeccao(models.Model):
 
                 if ultima and ultima.numero_controle.isdigit():
                     proximo = int(ultima.numero_controle) + 1
-                    if proximo < 4427:
-                        proximo = 4427
+                    if proximo < 4889:
+                        proximo = 4889
                 else:
-                    proximo = 4427 # Inicial solicitado
+                    proximo = 4889 # Inicial solicitado
                 
                 self.numero_controle = str(proximo)
 
@@ -383,12 +383,12 @@ class Prospeccao(models.Model):
                         # Extrai o numero apos "PRO."
                         ultimo_num = int(ultima.numero_controle.split('.')[-1])
                         proximo = ultimo_num + 1
-                        if proximo < 407:
-                            proximo = 407
+                        if proximo < 511:
+                            proximo = 511
                     except ValueError:
-                         proximo = 407
+                         proximo = 511
                 else:
-                    proximo = 407 # Inicial solicitado
+                    proximo = 511 # Inicial solicitado
                 
                 self.numero_controle = f"PRO.{proximo}"
         

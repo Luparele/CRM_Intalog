@@ -138,6 +138,18 @@ class ClienteProspect(models.Model):
         verbose_name="Cadastrado Por"
     )
     data_cadastro = models.DateTimeField(auto_now_add=True, verbose_name="Data de Cadastro")
+    
+    # Campos para controle de promoção a cliente ativo
+    promovido = models.BooleanField(default=False, verbose_name="Promovido a Cliente")
+    data_promocao = models.DateTimeField(null=True, blank=True, verbose_name="Data da Promoção")
+    cliente_ativo = models.ForeignKey(
+        'Cliente', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='prospect_origem',
+        verbose_name="Cliente Ativo Gerado"
+    )
 
     def __str__(self):
         return f"{self.razao_social} (Prospect)"

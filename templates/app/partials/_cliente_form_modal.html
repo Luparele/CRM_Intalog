@@ -1,4 +1,4 @@
-﻿{% load django_bootstrap5 %}
+{% load django_bootstrap5 %}
 
 <form hx-post="{% url 'app:salvar-cliente-prospeccao' %}" 
       hx-target="#main-modal-content" 
@@ -49,7 +49,7 @@
                 const cnpj = cnpjInput.value.replace(/[^\d]/g, '');
 
                 if (cnpj.length === 14) {
-                    const url = `/api/consulta-cnpj/${cnpj}/`;
+                    const url = `/ajax/consulta-cnpj/${cnpj}/`;
                     
                     // Feedback visual
                     const originalContent = this.innerHTML;

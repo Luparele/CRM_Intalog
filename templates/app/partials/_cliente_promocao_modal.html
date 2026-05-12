@@ -1,4 +1,4 @@
-﻿{% load django_bootstrap5 %}
+{% load django_bootstrap5 %}
 
 {# Adicionado hx-target para garantir que, se houver erro, ele substitua o corpo do modal mostrando o erro #}
 <form hx-post="{% url 'app:salvar-promocao-prospect' prospect.pk %}" 
@@ -76,7 +76,7 @@
             const cnpj = cnpjInput.value.replace(/[^\d]/g, '');
 
             if (cnpj.length === 14) {
-                const url = `/api/consulta-cnpj/${cnpj}/`;
+                const url = `/ajax/consulta-cnpj/${cnpj}/`;
                 
                 // Feedback visual
                 const originalContent = this.innerHTML;

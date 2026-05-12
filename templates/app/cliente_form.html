@@ -69,7 +69,7 @@
         const cnpj = cnpjInput.value.replace(/[^\d]/g, '');
 
         if (cnpj.length === 14) {
-            const url = `/api/consulta-cnpj/${cnpj}/`;
+            const url = `/ajax/consulta-cnpj/${cnpj}/`;
             
             const btn = this;
             const originalContent = btn.innerHTML;

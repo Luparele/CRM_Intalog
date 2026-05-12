@@ -39,9 +39,9 @@ urlpatterns = [
     path('servicos/historico/<int:cliente_id>/<int:mes>/<int:ano>/', views.servico_historico_modal, name='servico-historico-modal'),
     
     # URLs de API
-    path('api/add-tipo-servico/', views.add_tipo_servico_ajax, name='add-tipo-servico'),
+    path('ajax/add-tipo-servico/', views.add_tipo_servico_ajax, name='add-tipo-servico'),
     # --- NOVA LINHA ADICIONADA ABAIXO ---
-    path('api/consulta-cnpj/<str:cnpj>/', views.consulta_cnpj_api, name='consulta-cnpj-api'),
+    path('ajax/consulta-cnpj/<str:cnpj>/', views.consulta_cnpj_api, name='consulta-cnpj-api'),
 
     # URLs para Metas
     path('metas/', views.MetaListView.as_view(), name='meta-list'),

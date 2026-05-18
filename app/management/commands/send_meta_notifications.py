@@ -11,7 +11,7 @@ class Command(BaseCommand):
     help = 'Envia notificações push diárias sobre o status da meta global'
 
     def add_arguments(self, parser):
-        parser.add_argument('--test', type=str, help='Cenário de teste: success, alert, progress')
+        parser.add_argument('--test', type=str, help='Cenário de teste: success, alert, progress, maintenance')
 
     def handle(self, *args, **options):
         test_scenario = options.get('test')
@@ -71,7 +71,10 @@ class Command(BaseCommand):
         title = "CRM INTALOG - Status da Meta"
         body = ""
         
-        if percentual >= 100:
+        if test_scenario == 'maintenance':
+            title = "CRM INTALOG - Manutenção"
+            body = "Mensagem de teste - MANUTENÇÃO DO SERVIDOR"
+        elif percentual >= 100:
             body = f"Meta Batida! Parabéns equipe Intalog! 🎉 Alcançamos {percentual:.1f}% da meta de {nome_mes}."
         elif (dias_rest_uteis == 1 and hoje_is_util) or test_scenario == 'alert':
             faltante = val_meta - fat_total
@@ -99,7 +102,30 @@ class Command(BaseCommand):
             return
 
         try:
-            send_group_notification(group_name="metas", payload=payload)
-            self.stdout.write(self.style.SUCCESS("Notificações enviadas com sucesso!"))
+            from webpush.models import Group
+            from webpush.utils import _send_notification
+            from pywebpush import WebPushException
+            import json
+            
+            group = Group.objects.get(name="metas")
+            push_infos = group.webpush_info.select_related("subscription")
+            
+            payload_json = json.dumps(payload)
+            sucesso = 0
+            falhas = 0
+            
+            for push_info in push_infos:
+                try:
+                    _send_notification(push_info.subscription, payload_json, 0)
+                    sucesso += 1
+                except WebPushException as e:
+                    falhas += 1
+                    # Remove assinaturas inválidas que retornam 400, 404 ou 410
+                    if getattr(e, 'response', None) is not None and e.response.status_code in [400, 404, 410]:
+                        push_info.subscription.delete()
+                except Exception:
+                    falhas += 1
+                    
+            self.stdout.write(self.style.SUCCESS(f"Notificações finalizadas: {sucesso} enviadas, {falhas} falhas (assinaturas antigas/inválidas removidas)."))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Erro ao disparar notificações: {e}"))
+            self.stdout.write(self.style.ERROR(f"Erro inesperado ao disparar notificações: {e}"))

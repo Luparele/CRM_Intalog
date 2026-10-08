@@ -77,6 +77,7 @@ urlpatterns = [
     path('prospeccao/<int:pk>/finalizar/', views.finalizar_prospeccao, name='finalizar-prospeccao'),
     path('prospeccao/novo-cliente/', views.criar_cliente_prospeccao_modal, name='criar-cliente-prospeccao-modal'),
     path('prospeccao/salvar-cliente/', views.salvar_cliente_prospeccao, name='salvar-cliente-prospeccao'),
+    path('prospeccao/carregar-mais/', views.carregar_mais_prospeccoes, name='carregar-mais-prospeccoes'),
 
     # URLs de Relatórios
     path('relatorios/', views.relatorio_page, name='relatorio-page'),

@@ -83,6 +83,9 @@
                 {% empty %}
                 <div class="list-group-item text-center text-muted">Nenhuma nova prospecção.</div>
                 {% endfor %}
+                {% if has_more_nova %}
+                {% include 'app/partials/_prospeccoes_paginadas.html' with items="" has_more=True status="NOVA" next_page=2 %}
+                {% endif %}
             </div>
         </div>
     </div>
@@ -99,6 +102,9 @@
                 {% empty %}
                 <div class="list-group-item text-center text-muted">Nenhuma negociação em andamento.</div>
                 {% endfor %}
+                {% if has_more_negociando %}
+                {% include 'app/partials/_prospeccoes_paginadas.html' with items="" has_more=True status="NEGOCIANDO" next_page=2 %}
+                {% endif %}
             </div>
         </div>
     </div>
@@ -132,6 +138,9 @@
                             {% empty %}
                             <div class="list-group-item text-center text-muted">Nenhum item.</div>
                             {% endfor %}
+                            {% if has_more_fechado %}
+                            {% include 'app/partials/_prospeccoes_paginadas.html' with items="" has_more=True status="FECHADO" next_page=2 %}
+                            {% endif %}
                         </div>
                     </div>
                     <div class="tab-pane fade" id="desistencia" role="tabpanel">
@@ -141,6 +150,9 @@
                             {% empty %}
                             <div class="list-group-item text-center text-muted">Nenhum item.</div>
                             {% endfor %}
+                            {% if has_more_desistencia %}
+                            {% include 'app/partials/_prospeccoes_paginadas.html' with items="" has_more=True status="DESISTENCIA" next_page=2 %}
+                            {% endif %}
                         </div>
                     </div>
                     <div class="tab-pane fade" id="perdida" role="tabpanel">
@@ -150,6 +162,9 @@
                             {% empty %}
                             <div class="list-group-item text-center text-muted">Nenhum item.</div>
                             {% endfor %}
+                            {% if has_more_perdida %}
+                            {% include 'app/partials/_prospeccoes_paginadas.html' with items="" has_more=True status="PERDIDA" next_page=2 %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>

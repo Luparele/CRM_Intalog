@@ -5,12 +5,14 @@
             {{ prospeccao.cliente.razao_social }}
         </h6>
 
-        <div>
-            {# Contador de dias na etapa #}
-            {% if prospeccao.dias_na_etapa is not None and prospeccao.dias_na_etapa >= 0 %}
-            <span class="badge bg-light text-dark">
-                {{ prospeccao.dias_na_etapa }} dia{{ prospeccao.dias_na_etapa|pluralize }}
-            </span>
+        <div class="text-end" style="font-size: 0.75rem; white-space: nowrap;">
+            {% if prospeccao.status in 'NOVA,NEGOCIANDO' %}
+                <div class="text-muted">Criada há: <strong>{{ prospeccao.dias_desde_criacao }} dia{{ prospeccao.dias_desde_criacao|pluralize }}</strong></div>
+                <div class="text-muted mt-1">Últ. atualização: <strong>{{ prospeccao.dias_ultima_atualizacao }} dia{{ prospeccao.dias_ultima_atualizacao|pluralize }}</strong></div>
+            {% else %}
+                {% if prospeccao.dias_desde_finalizacao is not None %}
+                <div class="text-muted">Finalizada há: <strong>{{ prospeccao.dias_desde_finalizacao }} dia{{ prospeccao.dias_desde_finalizacao|pluralize }}</strong></div>
+                {% endif %}
             {% endif %}
         </div>
     </div>

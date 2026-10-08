@@ -1,0 +1,14 @@
+{% for prospeccao in items %}
+{% include 'app/partials/_prospeccao_card.html' %}
+{% endfor %}
+
+{% if has_more %}
+<div id="load-more-{{ status|lower }}" class="list-group-item text-center">
+    <button class="btn btn-sm btn-outline-primary w-100"
+            hx-get="{% url 'app:carregar-mais-prospeccoes' %}?status={{ status }}&page={{ next_page }}{% if request.GET.numero_controle %}&numero_controle={{ request.GET.numero_controle }}{% endif %}{% if request.GET.data_inicial %}&data_inicial={{ request.GET.data_inicial }}{% endif %}{% if request.GET.data_final %}&data_final={{ request.GET.data_final }}{% endif %}{% if request.GET.representante_filtro %}&representante_filtro={{ request.GET.representante_filtro }}{% endif %}"
+            hx-target="#load-more-{{ status|lower }}"
+            hx-swap="outerHTML">
+        Carregar +10
+    </button>
+</div>
+{% endif %}

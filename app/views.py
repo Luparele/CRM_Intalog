@@ -1330,14 +1330,20 @@ def prospeccao_view(request):
 
     # Separacao por Status (Colunas do Kanban)
     # Separação por Status (Colunas do Kanban)
-    novas = qs.filter(status='NOVA').order_by('-data_criacao')
-    negociando = qs.filter(status='NEGOCIANDO').order_by('-data_inicio_negociacao')
+    novas_qs = qs.filter(status='NOVA').order_by('-data_criacao')
+    negociando_qs = qs.filter(status='NEGOCIANDO').order_by('-data_inicio_negociacao')
 
+    # Para Finalizadas, separamos por tipo
+    finalizadas_fechado_qs = qs.filter(status='FECHADO').order_by('-data_finalizacao')
+    finalizadas_desistencia_qs = qs.filter(status='DESISTENCIA').order_by('-data_finalizacao')
+    finalizadas_perdida_qs = qs.filter(status='PERDIDA').order_by('-data_finalizacao')
 
-    # Para Finalizadas, separamos por tipo (ultimos 50 de cada para nao poluir)
-    finalizadas_fechado = qs.filter(status='FECHADO').order_by('-data_finalizacao')[:50]
-    finalizadas_desistencia = qs.filter(status='DESISTENCIA').order_by('-data_finalizacao')[:50]
-    finalizadas_perdida = qs.filter(status='PERDIDA').order_by('-data_finalizacao')[:50]
+    # Apenas os 10 primeiros
+    novas = novas_qs[:10]
+    negociando = negociando_qs[:10]
+    finalizadas_fechado = finalizadas_fechado_qs[:10]
+    finalizadas_desistencia = finalizadas_desistencia_qs[:10]
+    finalizadas_perdida = finalizadas_perdida_qs[:10]
     # Dados para o Dropdown de Filtro (Apenas usuários do setor comercial/representantes)
     representantes = User.objects.filter(profile__setor='REPRESENTANTE', is_active=True)
 
@@ -1351,6 +1357,11 @@ def prospeccao_view(request):
         'finalizadas_fechado': finalizadas_fechado,
         'finalizadas_desistencia': finalizadas_desistencia,
         'finalizadas_perdida': finalizadas_perdida,
+        'has_more_nova': novas_qs.count() > 10,
+        'has_more_negociando': negociando_qs.count() > 10,
+        'has_more_fechado': finalizadas_fechado_qs.count() > 10,
+        'has_more_desistencia': finalizadas_desistencia_qs.count() > 10,
+        'has_more_perdida': finalizadas_perdida_qs.count() > 10,
         'representantes': representantes,
         'filtro_selecionado': representante_id,  # Para manter o select marcado
         'total_em_negociacao': total_em_negociacao,
@@ -1362,6 +1373,59 @@ def prospeccao_view(request):
         return render(request, 'app/partials/_prospeccao_kanban_content.html', context)
 
     return render(request, 'app/prospeccao.html', context)
+
+@login_required
+def carregar_mais_prospeccoes(request):
+    if not (request.user.is_staff or request.user.profile.pode_acessar_prospeccao):
+        return HttpResponse("Acesso Negado", status=403)
+        
+    status = request.GET.get('status')
+    page = int(request.GET.get('page', 2))
+    per_page = 10
+    
+    qs = Prospeccao.objects.select_related('cliente', 'criado_por', 'tipo_servico').filter(status=status)
+
+    if not (request.user.is_staff or
+            request.user.profile.tem_acesso_gestao or
+            request.user.profile.is_diretoria or
+            request.user.profile.is_gerente_operacional):
+        qs = qs.filter(Q(criado_por=request.user) | Q(atribuido_a=request.user))
+        
+    search_numero = request.GET.get('numero_controle')
+    if search_numero:
+        qs = qs.filter(numero_controle__icontains=search_numero)
+
+    representante_id = request.GET.get('representante_filtro')
+    if representante_id == 'minhas':
+        qs = qs.filter(Q(criado_por=request.user) | Q(atribuido_a=request.user))
+    elif (request.user.is_staff or
+          request.user.profile.tem_acesso_gestao or
+          request.user.profile.is_diretoria or
+          request.user.profile.is_gerente_operacional) and representante_id and representante_id not in ['minhas', 'todos']:
+        qs = qs.filter(atribuido_a_id=representante_id)
+
+    if status == 'NOVA':
+        qs = qs.order_by('-data_criacao')
+    elif status == 'NEGOCIANDO':
+        qs = qs.order_by('-data_inicio_negociacao')
+    else:
+        qs = qs.order_by('-data_finalizacao')
+        
+    start = (page - 1) * per_page
+    end = page * per_page
+    
+    total_count = qs.count()
+    items = qs[start:end]
+    has_more = total_count > end
+    
+    context = {
+        'items': items,
+        'has_more': has_more,
+        'next_page': page + 1,
+        'status': status,
+        'request': request,
+    }
+    return render(request, 'app/partials/_prospeccoes_paginadas.html', context)
 
 @login_required
 def criar_cliente_prospeccao_modal(request):

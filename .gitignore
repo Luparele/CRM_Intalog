@@ -17,3 +17,4 @@ google_credentials.json
 token.json
 client_secrets.json
 backup_crm_*.tar.gz
+*.tar.gz

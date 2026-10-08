@@ -349,14 +349,29 @@ class Prospeccao(models.Model):
     data_finalizacao = models.DateTimeField(null=True, blank=True)
 
     @property
-    def dias_na_etapa(self):
+    def dias_desde_criacao(self):
         hoje = timezone.now().date()
-        if self.status == 'NOVA':
-            delta = hoje - self.data_criacao.date()
-            return delta.days
-        elif self.status == 'NEGOCIANDO' and self.data_inicio_negociacao:
-            delta = hoje - self.data_inicio_negociacao.date()
-            return delta.days
+        return (hoje - self.data_criacao.date()).days
+
+    @property
+    def dias_ultima_atualizacao(self):
+        datas = [self.data_criacao]
+        if self.data_inicio_negociacao:
+            datas.append(self.data_inicio_negociacao)
+        if self.data_finalizacao:
+            datas.append(self.data_finalizacao)
+        
+        ultima_acao = self.acoes.order_by('-data_registro').first()
+        if ultima_acao and ultima_acao.data_registro:
+            datas.append(ultima_acao.data_registro)
+            
+        ultima = max(datas)
+        return (timezone.now().date() - ultima.date()).days
+
+    @property
+    def dias_desde_finalizacao(self):
+        if self.data_finalizacao:
+            return (timezone.now().date() - self.data_finalizacao.date()).days
         return None
 
 

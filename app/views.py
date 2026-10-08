@@ -842,6 +842,7 @@ class ServicoListView(LoginRequiredMixin, ServicoMixin, TemplateView):
         context['ano_selecionado'] = ano
         context['meses_disponiveis'] = [(i, calendar.month_name[i].capitalize()) for i in range(1, 13)]
         context['anos_disponiveis'] = list(range(hoje.year - 2, hoje.year + 3))
+        context['filtro_clientes'] = self.request.GET.get('filtro_clientes', 'com_metas')
 
         if user.profile.is_representante:
             representantes = [user]
@@ -894,6 +895,13 @@ class ServicoListView(LoginRequiredMixin, ServicoMixin, TemplateView):
                 valor_faltante = max(Decimal('0.00'), meta_valor - faturamento_bruto)
                 percentual_faltante = 100 - percentual_atingido if percentual_atingido < 100 else 0
                 meta_diaria = meta_valor / dias_uteis if dias_uteis > 0 else Decimal('0.00')
+
+                # Filtro de exibição (a soma dos totais do representante já foi feita acima)
+                filtro = self.request.GET.get('filtro_clientes', 'com_metas')
+                if filtro == 'com_metas' and not tem_meta:
+                    continue
+                if filtro == 'com_faturamentos' and faturamento_bruto <= 0:
+                    continue
 
                 dados_clientes.append({
                     'cliente': cliente,
@@ -1054,27 +1062,51 @@ class MetaListView(LoginRequiredMixin, MetaMixin, ListView):
     context_object_name = 'metas'
 
     def get_queryset(self):
+        hoje = date.today()
+        
+        # Ano
         try:
-            year_str = self.request.GET.get('year', str(date.today().year))
+            year_str = self.request.GET.get('ano', self.request.GET.get('year', str(hoje.year)))
             self.selected_year = int(year_str.replace('.', ''))
         except (ValueError, TypeError):
-            self.selected_year = date.today().year
+            self.selected_year = hoje.year
 
-        queryset = Meta.objects.filter(ano=self.selected_year).select_related('cliente', 'cliente__cadastrado_por')
+        # Mês
+        try:
+            month_str = self.request.GET.get('mes')
+            if month_str:
+                self.selected_month = int(month_str)
+            else:
+                self.selected_month = hoje.month
+        except (ValueError, TypeError):
+            self.selected_month = hoje.month
+
+        # Cliente
+        self.search_cliente = self.request.GET.get('cliente', '')
+
+        queryset = Meta.objects.filter(ano=self.selected_year, mes=self.selected_month).select_related('cliente', 'cliente__cadastrado_por')
+
+        if self.search_cliente:
+            queryset = queryset.filter(cliente__razao_social__icontains=self.search_cliente)
 
         # Rep vê apenas metas dos seus clientes
         if self.request.user.profile.is_representante:
             queryset = queryset.filter(cliente__cadastrado_por=self.request.user)
 
-        return queryset.order_by('-mes', 'cliente__razao_social')
+        return queryset.order_by('cliente__razao_social')
 
     def get_context_data(self, **kwargs):
+        import calendar
         context = super().get_context_data(**kwargs)
-        anos_com_metas = Meta.objects.values_list('ano', flat=True).distinct().order_by('-ano')
-        context['anos_disponiveis'] = list(anos_com_metas)
-        if self.selected_year not in context['anos_disponiveis']:
-             context['anos_disponiveis'].insert(0, self.selected_year)
-        context['selected_year'] = self.selected_year
+        hoje = date.today()
+        
+        context['mes_selecionado'] = self.selected_month
+        context['ano_selecionado'] = self.selected_year
+        context['search_cliente'] = self.search_cliente
+        
+        context['meses_disponiveis'] = [(i, calendar.month_name[i].capitalize()) for i in range(1, 13)]
+        context['anos_disponiveis'] = list(range(hoje.year - 2, hoje.year + 3))
+        
         return context
 
 class MetaCreateView(LoginRequiredMixin, GestaoRequiredMixin, CreateView):

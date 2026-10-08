@@ -73,6 +73,20 @@
 </div>
 {% endif %}
 
+{# --- FILTRO DE CLIENTES --- #}
+<div class="d-flex align-items-center mb-2">
+    <label for="filtro_clientes" class="fw-bold me-2" style="font-size: 0.9rem;">Filtrar Clientes:</label>
+    <form method="get" id="form-filtro-clientes" class="m-0">
+        <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+        <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+        <select name="filtro_clientes" id="filtro_clientes" class="form-select form-select-sm" style="width: auto; min-width: 200px;" onchange="this.form.submit()">
+            <option value="todos" {% if filtro_clientes == 'todos' %}selected{% endif %}>Todos os Clientes</option>
+            <option value="com_metas" {% if filtro_clientes == 'com_metas' %}selected{% endif %}>Somente com Metas</option>
+            <option value="com_faturamentos" {% if filtro_clientes == 'com_faturamentos' %}selected{% endif %}>Somente com Faturamento</option>
+        </select>
+    </form>
+</div>
+
 {# --- LOOP POR REPRESENTANTE --- #}
 {% for item_rep in lista_por_representante %}
 <div class="card mb-5 border-0 shadow-sm">

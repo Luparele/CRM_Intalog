@@ -5,7 +5,7 @@
 
 {% block content %}
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <h1>Metas de {{ selected_year|stringformat:"d" }}</h1>
+        <h1>Metas de {{ ano_selecionado|stringformat:"d" }}</h1>
         
         {# Apenas Gestão (Comercial/Admin) pode criar metas #}
         {% if user.profile.tem_acesso_gestao %}
@@ -13,22 +13,34 @@
         {% endif %}
     </div>
 
-    <div class="card mb-4">
+    <div class="card mb-4 border shadow-sm">
         <div class="card-body">
-            <h5 class="card-title">Filtrar por Ano</h5>
+            <h5 class="card-title mb-3">Filtros</h5>
             <form method="get" action="{% url 'app:meta-list' %}">
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-4">
-                        <label for="id_year" class="form-label">Ano</label>
-                        <select class="form-select" name="year" id="id_year">
-                            {% for ano in anos_disponiveis %}
-                                <option value="{{ ano }}" {% if ano == selected_year %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
+                    <div class="col-md-3">
+                        <label for="id_mes" class="form-label text-muted small mb-1">Mês</label>
+                        <select class="form-select" name="mes" id="id_mes">
+                            {% for num, nome in meses_disponiveis %}
+                                <option value="{{ num }}" {% if num == mes_selecionado %}selected{% endif %}>{{ nome }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4 d-flex">
-                        <button class="btn btn-primary" type="submit">Filtrar</button>
-                        <a href="{% url 'app:meta-list' %}" class="btn btn-secondary ms-2">Limpar</a>
+                    <div class="col-md-3">
+                        <label for="id_ano" class="form-label text-muted small mb-1">Ano</label>
+                        <select class="form-select" name="ano" id="id_ano">
+                            {% for ano in anos_disponiveis %}
+                                <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>{{ ano|stringformat:"d" }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button class="btn btn-primary" type="submit">Aplicar</button>
+                        <a href="{% url 'app:meta-list' %}" class="btn btn-secondary">Mês Atual</a>
+                    </div>
+                    <div class="col-md-4 ms-auto">
+                        <label for="id_cliente" class="form-label text-muted small mb-1">Buscar Cliente</label>
+                        <input type="text" class="form-control" id="id_cliente" name="cliente" value="{{ search_cliente }}" placeholder="Digite o nome...">
                     </div>
                 </div>
             </form>

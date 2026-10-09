@@ -1828,21 +1828,30 @@ def direitos_page(request):
 def consulta_cnpj_api(request, cnpj):
     cnpj = ''.join(filter(str.isdigit, cnpj))
     if len(cnpj) != 14:
-        return JsonResponse({'error': 'CNPJ deve ter 14 dÃ­gitos.'}, status=400)
+        return JsonResponse({'error': 'CNPJ deve ter 14 dígitos.'}, status=400)
 
-    url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
+    url_brasil_api = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
+    url_receitaws = f"https://receitaws.com.br/v1/cnpj/{cnpj}"
 
-    # Tentativa com Retries manuais para lidar com a instabilidade da BrasilAPI
-    max_tentativas = 20
-
+    # Tentativa com Retries limitados (apenas para falhas reais, não para 404)
+    max_tentativas = 2
+    
+    # 1. Tentar BrasilAPI primeiro
     for tentativa in range(1, max_tentativas + 1):
         try:
-            response = requests.get(url, timeout=5)
+            response = requests.get(url_brasil_api, timeout=5)
 
             if response.status_code == 200:
                 data = response.json()
                 endereco = f"{data.get('logradouro', '')}, {data.get('numero', '')} - {data.get('bairro', '')}, {data.get('municipio', '')}/{data.get('uf', '')}"
                 return JsonResponse({'razao_social': data.get('razao_social', ''), 'endereco': endereco})
+            
+            if response.status_code == 404:
+                # Vamos pular direto para a ReceitaWS caso não ache na BrasilAPI
+                break
+                
+            if response.status_code == 400:
+                return JsonResponse({'error': 'CNPJ inválido.'}, status=400)
 
             if tentativa < max_tentativas:
                 time.sleep(1)
@@ -1852,9 +1861,22 @@ def consulta_cnpj_api(request, cnpj):
             if tentativa < max_tentativas:
                 time.sleep(1)
                 continue
-            return JsonResponse({'error': 'Erro de comunicaÃ§Ã£o com a API.'}, status=500)
 
-    return JsonResponse({'error': 'CNPJ nÃ£o encontrado ou API instÃ¡vel apÃ³s vÃ¡rias tentativas.'}, status=404)
+    # 2. Fallback para ReceitaWS
+    try:
+        res_ws = requests.get(url_receitaws, timeout=5)
+        if res_ws.status_code == 200:
+            data = res_ws.json()
+            if data.get('status') == 'ERROR':
+                return JsonResponse({'error': data.get('message', 'CNPJ não encontrado na Receita Federal.')}, status=404)
+            
+            endereco = f"{data.get('logradouro', '')}, {data.get('numero', '')} - {data.get('bairro', '')}, {data.get('municipio', '')}/{data.get('uf', '')}"
+            return JsonResponse({'razao_social': data.get('nome', ''), 'endereco': endereco})
+            
+    except requests.RequestException:
+        pass
+
+    return JsonResponse({'error': 'As APIs de consulta de CNPJ estão instáveis no momento. Tente novamente mais tarde.'}, status=500)
 
 @login_required
 def api_documentation(request):

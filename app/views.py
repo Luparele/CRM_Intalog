@@ -1831,7 +1831,7 @@ def consulta_cnpj_api(request, cnpj):
         return JsonResponse({'error': 'CNPJ deve ter 14 dígitos.'})
 
     url_brasil_api = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
-    url_receitaws = f"https://receitaws.com.br/v1/cnpj/{cnpj}"
+    url_receitaws = f"https://www.receitaws.com.br/v1/cnpj/{cnpj}"
 
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
 
@@ -1843,7 +1843,7 @@ def consulta_cnpj_api(request, cnpj):
     # 1. Tentar BrasilAPI primeiro
     for tentativa in range(1, max_tentativas + 1):
         try:
-            response = requests.get(url_brasil_api, headers=headers, timeout=5)
+            response = requests.get(url_brasil_api, headers=headers, timeout=12)
 
             if response.status_code == 200:
                 data = response.json()
@@ -1871,7 +1871,7 @@ def consulta_cnpj_api(request, cnpj):
 
     # 2. Fallback para ReceitaWS
     try:
-        res_ws = requests.get(url_receitaws, headers=headers, timeout=5)
+        res_ws = requests.get(url_receitaws, headers=headers, timeout=12)
         if res_ws.status_code == 200:
             data = res_ws.json()
             if data.get('status') == 'ERROR':

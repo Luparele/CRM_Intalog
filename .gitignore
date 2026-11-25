@@ -13,6 +13,7 @@ static_root/
 app/views.py_*
 # Backup e Credenciais
 Backup/
+integracao_globus/
 google_credentials.json
 token.json
 client_secrets.json

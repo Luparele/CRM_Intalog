@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .api_views import (
     UserViewSet,
     ClienteViewSet,
+    TipoServicoViewSet,
     ServicoViewSet,
     DashboardViewSet,
 )
@@ -14,6 +15,7 @@ router = DefaultRouter()
 # Registrar ViewSets
 router.register(r'usuarios', UserViewSet, basename='usuario')
 router.register(r'clientes', ClienteViewSet, basename='cliente')
+router.register(r'tipos-servico', TipoServicoViewSet, basename='tipo-servico')
 router.register(r'servicos', ServicoViewSet, basename='servico')
 router.register(r'dashboard', DashboardViewSet, basename='dashboard')
 

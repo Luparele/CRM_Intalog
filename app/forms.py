@@ -123,7 +123,7 @@ class TarefaForm(forms.ModelForm):
                 pode_delegar = True
             
             if pode_delegar:
-                self.fields['atribuido_a'].queryset = User.objects.filter(is_active=True).order_by('first_name')
+                self.fields['atribuido_a'].queryset = User.objects.filter(is_active=True).exclude(groups__name='Integracao API').order_by('first_name')
                 self.fields['atribuido_a'].widget.attrs.update({'class': 'form-select'})
             else:
                 self.fields.pop('atribuido_a')
@@ -164,7 +164,7 @@ class TarefaAgendadaForm(forms.ModelForm):
                 pode_delegar = True
             
             if pode_delegar:
-                self.fields['atribuido_a'].queryset = User.objects.filter(is_active=True).order_by('first_name')
+                self.fields['atribuido_a'].queryset = User.objects.filter(is_active=True).exclude(groups__name='Integracao API').order_by('first_name')
                 self.fields['atribuido_a'].widget.attrs.update({'class': 'form-select'})
             else:
                 self.fields.pop('atribuido_a')

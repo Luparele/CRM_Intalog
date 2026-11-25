@@ -225,11 +225,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # API REST
 
-INSTALLED_APPS += ['rest_framework']
+INSTALLED_APPS += ['rest_framework', 'rest_framework.authtoken']
 
 
 
 REST_FRAMEWORK = {
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+
+        'rest_framework.authentication.TokenAuthentication',
+
+        'rest_framework.authentication.SessionAuthentication',
+
+    ],
 
     'DEFAULT_PERMISSION_CLASSES': [
 
